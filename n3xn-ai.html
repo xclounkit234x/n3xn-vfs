@@ -136,6 +136,12 @@
       </div>
 
       <div class="sidebar-section">
+        <h3>Cache</h3>
+        <button id="clearCacheBtn" style="width: 100%; font-size: 0.8rem; padding: 6px 10px;">Clear Cache</button>
+        <div class="perf-info" id="cacheInfo" style="margin-top: 8px;">—</div>
+      </div>
+
+      <div class="sidebar-section">
         <h3>Perf</h3>
         <div class="perf-info" id="perfInfo">—</div>
       </div>
@@ -238,6 +244,23 @@
         const store = tx.objectStore("models");
         store.put({ id: modelId, cached: true, timestamp: Date.now() });
       } catch {}
+    }
+
+    async function clearCache() {
+      if (!confirm("Clear all cached models? (Will need to re-download on next load)")) return;
+
+      try {
+        const db = await openDB();
+        const tx = db.transaction("models", "readwrite");
+        const store = tx.objectStore("models");
+        store.clear();
+
+        $("cacheInfo").textContent = "Cache cleared. Freed memory.";
+        addMessage("system", "Model cache cleared.");
+        setTimeout(() => { $("cacheInfo").textContent = "—"; }, 2000);
+      } catch (err) {
+        addMessage("system", "Clear failed: " + err.message);
+      }
     }
 
     // ============ WebLLM Loading ============
@@ -435,8 +458,9 @@
       $("messages").innerHTML = "";
       conversationHistory = [];
       saveHistory();
-      addMessage("system", "Cleared.");
+      addMessage("system", "Chat cleared.");
     });
+    $("clearCacheBtn").addEventListener("click", clearCache);
     $("sendBtn").addEventListener("click", sendMessage);
     $("userInput").addEventListener("keydown", (e) => {
       if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
@@ -449,6 +473,17 @@
     (async function init() {
       $("systemPrompt").value = loadSystemPrompt();
       conversationHistory = loadHistory();
+
+      // Check cache status
+      try {
+        const db = await openDB();
+        const tx = db.transaction("models", "readonly");
+        const store = tx.objectStore("models");
+        const req = store.getAll();
+        req.onsuccess = () => {
+          $("cacheInfo").textContent = req.result.length > 0 ? "Cached: " + req.result.map(r => r.id).join(", ") : "No cache";
+        };
+      } catch {}
 
       addMessage("system", "n3xn AI V1.1 (optimized)");
       await loadWebLLM();
