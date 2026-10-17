@@ -1,0 +1,1 @@
+{"instruction":"Write a JavaScript function that adds two numbers.","output":"function add(a,b){return a+b;}"}
