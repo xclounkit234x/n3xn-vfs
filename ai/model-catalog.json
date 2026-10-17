@@ -1,44 +1,94 @@
 {
-  "version": 2,
+  "version": 3,
+  "runtime": "nrxn-air",
+  "status": "main-build",
   "tiers": [
     {
       "id": "smol",
       "name": "Smol and below",
       "models": [
-        "SmolLM2 135M Instruct",
-        "SmolLM2 360M Instruct",
-        "Qwen2.5 0.5B Instruct",
-        "SmolLM2 360M GGUF"
+        {
+          "name": "SmolLM2 135M Instruct",
+          "status": "planned"
+        },
+        {
+          "name": "SmolLM2 360M Instruct",
+          "status": "planned"
+        },
+        {
+          "name": "Qwen2.5 0.5B Instruct",
+          "status": "planned"
+        },
+        {
+          "name": "NRXN AIR Tiny Demo Brain",
+          "status": "bundled"
+        }
       ]
     },
     {
       "id": "small",
       "name": "Small",
       "models": [
-        "SmolLM2 1.7B",
-        "Qwen3 1.7B",
-        "Qwen2.5-Coder 1.5B",
-        "Phi-3.5 Mini"
+        {
+          "name": "SmolLM2 1.7B",
+          "status": "planned"
+        },
+        {
+          "name": "Qwen3 1.7B",
+          "status": "planned"
+        },
+        {
+          "name": "Qwen2.5-Coder 1.5B",
+          "status": "planned"
+        },
+        {
+          "name": "Phi-3.5 Mini",
+          "status": "planned"
+        }
       ]
     },
     {
       "id": "mid",
       "name": "Mid-size",
       "models": [
-        "SmolLM3 3B",
-        "Qwen3 4B",
-        "Gemma 3 4B",
-        "Phi-4 Mini"
+        {
+          "name": "SmolLM3 3B",
+          "status": "planned"
+        },
+        {
+          "name": "Qwen3 4B",
+          "status": "planned"
+        },
+        {
+          "name": "Gemma 3 4B",
+          "status": "planned"
+        },
+        {
+          "name": "Phi-4 Mini",
+          "status": "planned"
+        }
       ]
     },
     {
       "id": "qwen-plus",
       "name": "Qwen and above",
       "models": [
-        "Qwen3.5 4B",
-        "Qwen3.5 9B",
-        "Gemma 3 12B",
-        "Gemma 3 27B"
+        {
+          "name": "Qwen3.5 4B",
+          "status": "planned"
+        },
+        {
+          "name": "Qwen3.5 9B",
+          "status": "planned"
+        },
+        {
+          "name": "Gemma 3 12B",
+          "status": "planned"
+        },
+        {
+          "name": "Gemma 3 27B",
+          "status": "planned"
+        }
       ]
     }
   ]

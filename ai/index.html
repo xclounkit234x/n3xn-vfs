@@ -1,22 +1,17 @@
-<!doctype html>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>NRXN AIR v0.2</title>
+<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>NRXN AIR · v0.3</title>
 <style>
-body{margin:0;background:#080b10;color:#dce7f5;font:15px ui-monospace,monospace;display:grid;place-items:center;min-height:100vh}
-main{width:min(900px,92vw);padding:28px;border:1px solid #29364a;border-radius:18px;background:#0e1520}
-pre{white-space:pre-wrap;line-height:1.5;color:#a9c7ff}
+:root{color-scheme:dark}*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 20% 0%,#16243a,#070a0f 55%);color:#dce8f8;font:14px ui-monospace,SFMono-Regular,Consolas,monospace;min-height:100vh}main{width:min(980px,94vw);margin:5vh auto;padding:22px;border:1px solid #2c415c;border-radius:20px;background:#0b1119e8;box-shadow:0 20px 70px #0008}h1{margin:0 0 6px;font-size:20px}small{color:#8195ad}.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:18px}.card{border:1px solid #23344a;border-radius:14px;padding:14px;background:#0d1622}.label{color:#7ea7d8}.status{color:#8ff0bd}.err{color:#ff8998}textarea,input,button{font:inherit}textarea{width:100%;min-height:90px;resize:vertical;background:#070b11;color:#e6efff;border:1px solid #263a51;border-radius:10px;padding:10px}button{border:1px solid #36577a;background:#12243a;color:#dcecff;padding:9px 12px;border-radius:9px;cursor:pointer}button:hover{background:#18304b}pre{white-space:pre-wrap;line-height:1.55;margin:0;color:#b9d5ff}.chat{min-height:220px;max-height:420px;overflow:auto}.msg{padding:10px;border-bottom:1px solid #182536}.user{color:#9fc7ff}.air{color:#a7f2c5}.bar{display:flex;gap:8px;margin-top:10px}.bar textarea{min-height:55px}.bar button{align-self:stretch}.pill{display:inline-block;padding:3px 7px;border:1px solid #2c435d;border-radius:999px;color:#91a9c3;margin-right:5px}
+@media(max-width:700px){.grid{grid-template-columns:1fr}}
 </style>
-<main><h1>NRXN AIR · v0.2</h1><pre id="log">Booting NRXN AIR...</pre></main>
+<main><h1>NRXN AIR · v0.3 · FIRST USABLE MAIN BUILD</h1><small>Local CPU WebAssembly runtime · no backend · no WebGPU</small>
+<div class="grid"><section class="card"><div class="label">RUNTIME</div><pre id="runtime">Booting...</pre></section><section class="card"><div class="label">MODEL</div><pre id="model">Waiting...</pre></section></div>
+<section class="card" style="margin-top:14px"><div class="label">LOCAL CHAT</div><div id="chat" class="chat"></div><div class="bar"><textarea id="input" placeholder="Ask the tiny local AIR model something..."></textarea><button id="send">SEND</button></div></section>
+<section class="card" style="margin-top:14px"><div class="label">CONSOLE</div><pre id="log"></pre></section></main>
 <script type="module">
-import {AIRRuntime} from "./air.js";
-const log=document.querySelector("#log");
-const say=x=>log.textContent+="\n"+x;
-try{
-  const air=await new AIRRuntime().start();
-  const s=await air.call("status");
-  say(`WASM ready · version ${s.version} · memory ${s.memoryBytes} bytes`);
-  const t=await air.selfTest(4*1024*1024);
-  say(`AIR allocator OK · pointer ${t.pointer} · memory ${t.capacityAfter} bytes`);
-}catch(e){say("ERROR: "+e.message)}
+import{AIRRuntime}from"./air.js";import{loadManifest,loadModelBytes}from"./model-loader.js";
+const $=s=>document.querySelector(s),log=t=>{$("#log").textContent+=t+"\n"};let air;
+function add(role,text){const d=document.createElement("div");d.className="msg";d.innerHTML=`<b class="${role}">${role.toUpperCase()}</b>\n${text.replaceAll("&","&amp;").replaceAll("<","&lt;")}`;$("#chat").append(d);$("#chat").scrollTop=999999;}
+async function boot(){try{air=await new AIRRuntime().start();const s=await air.status();$("#runtime").textContent=`WASM v${s.version}\nMemory: ${s.memoryBytes.toLocaleString()} bytes\nBackend: CPU / WebAssembly\nWebGPU: disabled\nBackend service: none`;const manifest=await loadManifest();$("#model").textContent=`${manifest.name}\nFormat: ${manifest.format}\nSize: ${manifest.bytes.toLocaleString()} bytes\nSHA-256: ${manifest.sha256.slice(0,16)}…`;const bytes=await loadModelBytes(manifest,new URL("./model/",import.meta.url),p=>{$("#model").textContent=`${manifest.name}\nLoading: ${p.bytes.toLocaleString()} / ${p.total.toLocaleString()} bytes\nPart ${p.part}/${p.parts}`});const m=await air.loadModel(bytes);$("#model").textContent=`${manifest.name}\nLoaded: ${m.bytes.toLocaleString()} bytes\nVerified: SHA-256 + model header\nRuntime memory: ${m.memoryBytes.toLocaleString()} bytes`;log("AIR ready. Model loaded locally.");add("air","Hello! AIR is running locally in WebAssembly. This is the tiny proof model; larger real models can use the same loader/runtime interface.");}catch(e){$("#runtime").innerHTML=`<span class="err">ERROR: ${e.message}</span>`;log("ERROR: "+e.message)}}
+async function send(){const el=$("#input"),text=el.value.trim();if(!text||!air)return;el.value="";add("user",text);try{const r=await air.generate(text,{maxChars:420});add("air",r.text);log(`Generated ${r.chars} chars · ${r.memoryBytes.toLocaleString()} bytes WASM memory`);}catch(e){add("air","ERROR: "+e.message);log("ERROR: "+e.message)}}
+$("#send").onclick=send;$("#input").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send()}});boot();
 </script>
