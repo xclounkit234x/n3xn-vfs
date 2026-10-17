@@ -163,6 +163,7 @@
       div.textContent = content;
       $("messages").appendChild(div);
       $("messages").scrollTop = $("messages").scrollHeight;
+      return div;
     }
 
     function setStatus(id, text, cls = "") {
