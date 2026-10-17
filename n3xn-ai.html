@@ -40,7 +40,7 @@ input,textarea,select{background:linear-gradient(180deg,rgba(4,7,13,.62),rgba(17
    <div class="status"><span>WebGPU</span><span class="muted">off by default</span></div>
    <div class="status"><span>Agent</span><span id="agent" class="muted">idle</span></div>
   </div>
-  <div class="section"><h3>Model</h3><div class="stack"><select id="model"><option value="onnx-community/Qwen2.5-0.5B-Instruct">Qwen2.5 0.5B Instruct — CPU WASM</option><option value="onnx-community/SmolLM2-360M-ONNX">SmolLM2 360M — CPU WASM</option></select><button id="load" class="primary">Load CPU model</button><button id="unload">Unload</button></div><div class="tiny muted" id="loadInfo" style="margin-top:7px">Model weights are fetched and cached locally by the runtime.</div></div>
+  <div class="section"><h3>Model</h3><div class="stack"><select id="model"><option value="onnx-community/Qwen2.5-0.5B-Instruct">Qwen2.5 0.5B Instruct — CPU WASM</option><option value="onnx-community/SmolLM2-360M-Instruct-ONNX">SmolLM2 360M Instruct — CPU WASM</option></select><button id="load" class="primary">Load CPU model</button><button id="unload">Unload</button></div><div class="tiny muted" id="loadInfo" style="margin-top:7px">Model weights are fetched and cached locally by the runtime.</div></div>
   <div class="section"><h3>Agent controls</h3><div class="stack"><label class="tiny muted">Tokens / 500ms <input id="rate" class="slider" type="range" min="2" max="48" value="12"></label><label class="tiny muted">Cooling ms <input id="cool" class="slider" type="range" min="0" max="1500" value="220"></label><label class="tiny muted">Max output <input id="max" type="number" min="32" max="4096" value="512"></label><label class="tiny muted"><input id="think" type="checkbox" checked> allow reflect/think phase</label><label class="tiny muted"><input id="autoTools" type="checkbox" checked> allow automatic tools</label><label class="tiny muted"><input id="askJS" type="checkbox" checked> confirm AI JS execution</label></div></div>
   <div class="section"><h3>Adaptive performance</h3>
    <div class="perfgrid">
@@ -129,16 +129,25 @@ async function loadRuntime(){if(pipe)return;busy=true;$('load').disabled=true;$(
     mod.env.useWasmCache=true;
     // CPU/WASM only. Use 2 threads only when the page is actually cross-origin isolated.
     // Otherwise stay at one thread so Chrome does not warn/fallback and low-end devices remain calmer.
+    // IMPORTANT: Transformers.js 4.3.1 defaults to ORT's Asyncify build.
+    // For CPU-only q4 ONNX models, use the plain SIMD-threaded WASM build.
+    // The Asyncify build is aimed at the newer WebGPU path and can fail to
+    // create CPU sessions for some quantized models.
     const threads=self.crossOriginIsolated?Math.max(1,Math.min(2,navigator.hardwareConcurrency||2)):1;
-    mod.env.backends.onnx.wasm.numThreads=threads;
-    const ortVersion=mod.env.backends.onnx.versions?.web;
+    const ort=mod.env.backends.onnx;
+    ort.wasm.numThreads=threads;
+    const ortVersion=ort.versions?.web;
     if(ortVersion){
-      mod.env.backends.onnx.wasm.wasmPaths=`https://cdn.jsdelivr.net/npm/onnxruntime-web@${ortVersion}/dist/`;
+      const ortDist=`https://cdn.jsdelivr.net/npm/onnxruntime-web@${ortVersion}/dist/`;
+      ort.wasm.wasmPaths={
+        mjs: ortDist+'ort-wasm-simd-threaded.mjs',
+        wasm: ortDist+'ort-wasm-simd-threaded.wasm'
+      };
     }
     const modelId=$('model').value;
     log(`Model CDN: https://huggingface.co/${modelId}/resolve/main/…`);
     log(`Transformers.js CDN: https://esm.sh/@huggingface/transformers@4.3.1`);
-    log(`ONNX Runtime WASM CDN: jsDelivr${ortVersion?` @${ortVersion}`:''}`);
+    log(`ONNX Runtime WASM CDN: jsDelivr${ortVersion?` @${ortVersion}`:''} · plain SIMD CPU build`);
     log(`CPU threads: ${threads}${self.crossOriginIsolated?' (cross-origin isolated)':' (single-thread safe mode)'}`);
     pipe=await mod.pipeline('text-generation',modelId,{dtype:'q4',device:'wasm'});$('rt').textContent='ready';$('rt').className='ok';$('agent').textContent='idle';log('CPU/WASM model loaded; WebGPU was not requested.');}catch(e){pipe=null;$('rt').textContent='failed';$('rt').className='bad';$('agent').textContent='error';log('Runtime error: '+e.message);renderMessage('system','CPU/WASM model failed to load. See console for details.');}finally{busy=false;$('load').disabled=false}}
 async function unload(){pipe=null;$('rt').textContent='not loaded';$('rt').className='warn';$('agent').textContent='idle';log('Model reference released. Browser may retain library/model cache until pressure or cache cleanup.')}
