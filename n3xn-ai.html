@@ -118,13 +118,13 @@ async function callTool(name,args,fromAI=true){activity('tool → '+name);if(!TO
 function parseToolCalls(text){const out=[];const re=/<tool\s+name=["']([^"']+)["']\s*>([\s\S]*?)<\/tool>/gi;let m;while((m=re.exec(text)))try{out.push({name:m[1],args:JSON.parse(m[2])})}catch{out.push({name:m[1],args:{_raw:m[2]}})}return out}
 function toolPrompt(){return `\n\nLOCAL TOOLS. When you need one, emit exactly: <tool name="TOOL_NAME">{"arg":"value"}</tool>. Available: memory.list, memory.search {query}, memory.save {text}, chats.list, chats.search {query}, chats.show {id}, files.list, files.read {id}, js.run {code}. Tool results will be supplied to you. Do not invent tool results. You may use multiple tools. For JavaScript, write only sandbox-compatible JS; it has no network and no access to the parent page.\n`}
 function compactContext(){const max=32;return chatMessages.slice(-max)}
-async function loadRuntime(){if(pipe)return;busy=true;$('load').disabled=true;$('rt').textContent='loading';$('agent').textContent='loading CPU/WASM';try{const mod=await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.3.1');
+async function loadRuntime(){if(pipe)return;busy=true;$('load').disabled=true;$('rt').textContent='loading';$('agent').textContent='loading CPU/WASM';try{const mod=await import('https://esm.sh/@huggingface/transformers@4.3.1');
     // NRXN VFS: models must come from the explicit Hugging Face CDN path, not /models/ on this site.
     // The SW serves /n3xn-ai, so an accidental local-model probe becomes a false 404.
     mod.env.allowLocalModels=false;
     mod.env.allowRemoteModels=true;
     mod.env.remoteHost='https://huggingface.co';
-    mod.env.remotePathTemplate='{model}/resolve/{revision}/{file}';
+    mod.env.remotePathTemplate='{model}/resolve/{revision}';
     mod.env.useBrowserCache=true;
     mod.env.useWasmCache=true;
     // CPU/WASM only. Use 2 threads only when the page is actually cross-origin isolated.
@@ -136,7 +136,8 @@ async function loadRuntime(){if(pipe)return;busy=true;$('load').disabled=true;$(
       mod.env.backends.onnx.wasm.wasmPaths=`https://cdn.jsdelivr.net/npm/onnxruntime-web@${ortVersion}/dist/`;
     }
     const modelId=$('model').value;
-    log(`Model CDN: https://huggingface.co/${modelId}/resolve/main/...`);
+    log(`Model CDN: https://huggingface.co/${modelId}/resolve/main/…`);
+    log(`Transformers.js CDN: https://esm.sh/@huggingface/transformers@4.3.1`);
     log(`ONNX Runtime WASM CDN: jsDelivr${ortVersion?` @${ortVersion}`:''}`);
     log(`CPU threads: ${threads}${self.crossOriginIsolated?' (cross-origin isolated)':' (single-thread safe mode)'}`);
     pipe=await mod.pipeline('text-generation',modelId,{dtype:'q4',device:'wasm'});$('rt').textContent='ready';$('rt').className='ok';$('agent').textContent='idle';log('CPU/WASM model loaded; WebGPU was not requested.');}catch(e){pipe=null;$('rt').textContent='failed';$('rt').className='bad';$('agent').textContent='error';log('Runtime error: '+e.message);renderMessage('system','CPU/WASM model failed to load. See console for details.');}finally{busy=false;$('load').disabled=false}}
