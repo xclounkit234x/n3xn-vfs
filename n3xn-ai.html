@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>n3xn AI</title>
+  <title>n3xn AI - V1</title>
   <style>
     :root {
       --bg: #0f1115; --panel: #161a22; --card: #1c212b; --border: #2a3140;
       --text: #e8ecf4; --muted: #8b95a8; --accent: #6ea8fe;
       --good: #3dd68c; --warn: #f5a524; --bad: #f31260;
-      --user: #2a3a5c; --assistant: #1e2430; --error-bg: #2a1518;
+      --user: #2a3a5c; --assistant: #1e2430;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -22,21 +22,19 @@
       padding: 12px 16px; background: var(--panel);
       border-bottom: 1px solid var(--border); gap: 12px; flex-wrap: wrap;
     }
-    .logo { font-weight: 700; font-size: 1.15rem; color: var(--accent); white-space: nowrap; }
+    .logo { font-weight: 700; font-size: 1.15rem; color: var(--accent); }
     .header-controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-    select, button, input[type="text"] {
+    select, button {
       background: var(--card); color: var(--text); border: 1px solid var(--border);
-      border-radius: 8px; padding: 8px 12px; font-size: 0.9rem;
+      border-radius: 8px; padding: 8px 12px; font-size: 0.9rem; cursor: pointer;
     }
-    select, button { cursor: pointer; }
-    select:hover, button:hover, input[type="text"]:focus { border-color: var(--accent); outline: none; }
+    select:hover, button:hover { border-color: var(--accent); outline: none; }
     button.primary { background: var(--accent); color: #0f1115; border-color: var(--accent); font-weight: 600; }
     button.primary:hover { filter: brightness(1.08); }
     button:disabled { opacity: 0.5; cursor: not-allowed; }
-    button.small { padding: 6px 10px; font-size: 0.8rem; }
     main { flex: 1; display: flex; overflow: hidden; }
     aside {
-      width: 320px; background: var(--panel); border-right: 1px solid var(--border);
+      width: 300px; background: var(--panel); border-right: 1px solid var(--border);
       display: flex; flex-direction: column; overflow-y: auto; flex-shrink: 0;
     }
     .sidebar-section { padding: 14px 16px; border-bottom: 1px solid var(--border); }
@@ -50,13 +48,12 @@
     }
     .status-ok { color: var(--good); } .status-warn { color: var(--warn); } .status-bad { color: var(--bad); }
     label { display: block; font-size: 0.85rem; color: var(--muted); margin-bottom: 4px; }
-    textarea.system-prompt, textarea.library, input.base-url {
+    textarea {
       width: 100%; background: var(--card); border: 1px solid var(--border);
       border-radius: 8px; color: var(--text); padding: 8px; font-size: 0.85rem;
       font-family: inherit;
     }
     textarea.system-prompt { height: 80px; resize: vertical; }
-    textarea.library { height: 140px; resize: vertical; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.8rem; }
     .chat-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
     #messages {
       flex: 1; overflow-y: auto; padding: 20px 16px;
@@ -75,12 +72,6 @@
       align-self: center; background: transparent; color: var(--muted);
       font-size: 0.85rem; text-align: center; max-width: 100%;
     }
-    .msg.error {
-      align-self: center; background: var(--error-bg); border: 1px solid var(--bad);
-      color: #ff8a9a; font-size: 0.85rem; max-width: 95%;
-      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-    }
-    .msg .role { font-size: 0.75rem; color: var(--muted); margin-bottom: 4px; font-weight: 600; }
     .input-area {
       padding: 12px 16px 16px; border-top: 1px solid var(--border);
       background: var(--panel); display: flex; gap: 10px; align-items: flex-end;
@@ -104,16 +95,6 @@
     .progress-bar-bg { height: 8px; background: var(--card); border-radius: 4px; overflow: hidden; margin: 14px 0 8px; }
     .progress-bar { height: 100%; background: var(--accent); width: 0%; transition: width 0.2s; }
     #progressText { font-size: 0.9rem; color: var(--muted); }
-    .note { font-size: 0.8rem; color: var(--muted); margin-top: 8px; line-height: 1.4; }
-    .checkbox-row { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; margin-top: 8px; color: var(--muted); }
-    .btn-row { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
-    .saved-indicator { font-size: 0.75rem; color: var(--good); margin-top: 4px; min-height: 1.1em; }
-    @media (max-width: 700px) {
-      aside { position: fixed; left: -320px; top: 0; bottom: 0; z-index: 50; transition: left 0.25s; }
-      aside.open { left: 0; }
-      .menu-btn { display: inline-block !important; }
-    }
-    .menu-btn { display: none; }
   </style>
 </head>
 <body>
@@ -126,22 +107,13 @@
   </div>
 
   <header>
-    <div style="display:flex;align-items:center;gap:10px">
-      <button class="menu-btn" id="menuBtn">☰</button>
-      <div class="logo">n3xn AI</div>
-    </div>
+    <div class="logo">n3xn AI - V1</div>
     <div class="header-controls">
       <select id="modelSelect">
         <option value="">Select a model…</option>
-        <optgroup label="Tiny (start here)">
+        <optgroup label="Tiny (CPU-friendly)">
           <option value="SmolLM2-360M-Instruct-q4f16_1-MLC">SmolLM2 360M (~210 MB)</option>
           <option value="Qwen2.5-0.5B-Instruct-q4f16_1-MLC" selected>Qwen2.5 0.5B (~280 MB)</option>
-          <option value="Qwen3-0.6B-q4f16_1-MLC">Qwen3 0.6B (~350 MB)</option>
-        </optgroup>
-        <optgroup label="Small">
-          <option value="Llama-3.2-1B-Instruct-q4f16_1-MLC">Llama 3.2 1B (~710 MB)</option>
-          <option value="Qwen2.5-1.5B-Instruct-q4f16_1-MLC">Qwen2.5 1.5B (~870 MB)</option>
-          <option value="Qwen2.5-Coder-1.5B-Instruct-q4f16_1-MLC">Qwen2.5 Coder 1.5B (~870 MB)</option>
         </optgroup>
       </select>
       <button id="loadBtn" class="primary">Load Model</button>
@@ -153,53 +125,15 @@
     <aside id="sidebar">
       <div class="sidebar-section">
         <h3>Status</h3>
-        <div class="status-line"><span>WebGPU</span><span id="webgpuStatus">checking…</span></div>
         <div class="status-line"><span>WebLLM</span><span id="webllmStatus">loading…</span></div>
         <div class="status-line"><span>Model</span><span id="modelStatus">None</span></div>
         <div class="status-line"><span>Engine</span><span id="engineStatus">Idle</span></div>
       </div>
 
       <div class="sidebar-section">
-        <h3>Personality</h3>
-        <label for="personality">Preset</label>
-        <select id="personality" style="width:100%;margin-bottom:10px">
-          <option value="default">Helpful & clear</option>
-          <option value="chill">Chill & casual</option>
-          <option value="concise">Very concise</option>
-          <option value="coding">Coding assistant</option>
-          <option value="custom">Custom (edit below)</option>
-        </select>
-        <label for="systemPrompt">System instructions</label>
+        <h3>System Prompt</h3>
+        <label for="systemPrompt">Instructions</label>
         <textarea id="systemPrompt" class="system-prompt"></textarea>
-      </div>
-
-      <div class="sidebar-section">
-        <h3>Knowledge Library</h3>
-        <p class="note" style="margin-top:0;margin-bottom:8px">
-          Extra facts the AI always sees. Edit freely — changes save automatically.
-        </p>
-        <textarea id="knowledgeLibrary" class="library" placeholder="Add facts, project notes, coding rules…"></textarea>
-        <div class="btn-row">
-          <button id="resetLibraryBtn" class="small">Reset to default</button>
-          <button id="saveLibraryBtn" class="small primary">Save now</button>
-        </div>
-        <div id="librarySaved" class="saved-indicator"></div>
-      </div>
-
-      <div class="sidebar-section">
-        <h3>Debug</h3>
-        <div class="checkbox-row">
-          <input type="checkbox" id="showErrors" checked>
-          <label for="showErrors" style="margin:0">Show errors in chat</label>
-        </div>
-        <div class="checkbox-row">
-          <input type="checkbox" id="shareErrorsWithAI">
-          <label for="shareErrorsWithAI" style="margin:0">Include errors when chatting</label>
-        </div>
-        <div class="checkbox-row">
-          <input type="checkbox" id="useLibrary" checked>
-          <label for="useLibrary" style="margin:0">Inject knowledge library</label>
-        </div>
       </div>
     </aside>
 
@@ -217,52 +151,18 @@
     let isGenerating = false;
     let webllmReady = false;
     let CreateMLCEngine = null;
-    let recentErrors = [];
-    let saveTimer = null;
 
-    const STORAGE_KEY = "n3xn-ai-knowledge-v1";
-    const PROMPT_KEY = "n3xn-ai-system-prompt-v1";
-
-    const DEFAULT_KNOWLEDGE = `n3xn project facts:
-- n3xn is a browser-based VFS (virtual file system) + coding environment that runs fully client-side.
-- It supports HTML, CSS, JS, Python (Pyodide), React, games (Kaboom, Phaser, etc.), and more.
-- Offline support is handled by a Service Worker with /__cdn__/ proxy paths for libraries.
-- Models and chat can run fully offline after the first download.
-- The user is often on a school Chromebook with limited memory — keep answers practical and not too long.
-- Prefer clear, working code examples over long explanations.
-- When helping with n3xn, talk about real features: VFS, terminal, runners, Monaco editor, offline packs, SW caching.`;
-
-    const personalities = {
-      default: "You are n3xn AI, a helpful local assistant running entirely in the browser inside the n3xn project. Be clear, direct, and practical. Keep answers reasonably short unless asked for more detail.",
-      chill: "You are n3xn AI. Keep things relaxed, casual, and friendly. Use simple language. Light humor is ok.",
-      concise: "You are n3xn AI. Give short, direct answers. Avoid filler. Get to the point quickly.",
-      coding: "You are n3xn AI, a coding assistant focused on HTML, CSS, JavaScript, and the n3xn environment. Prefer clear explanations and working code examples."
-    };
+    const STORAGE_KEY = "n3xn-ai-system-prompt-v1";
+    const DEFAULT_SYSTEM = "You are n3xn AI, a helpful local assistant. Be clear, direct, and practical. Keep answers short.";
 
     const $ = (id) => document.getElementById(id);
 
     function addMessage(role, content) {
       const div = document.createElement("div");
       div.className = `msg ${role}`;
-      if (role === "user" || role === "assistant") {
-        const roleLabel = document.createElement("div");
-        roleLabel.className = "role";
-        roleLabel.textContent = role === "user" ? "You" : "n3xn AI";
-        div.appendChild(roleLabel);
-      }
-      const text = document.createElement("div");
-      text.textContent = content;
-      div.appendChild(text);
+      div.textContent = content;
       $("messages").appendChild(div);
       $("messages").scrollTop = $("messages").scrollHeight;
-      return text;
-    }
-
-    function addError(msg) {
-      recentErrors.push(String(msg));
-      if (recentErrors.length > 20) recentErrors.shift();
-      if ($("showErrors")?.checked) addMessage("error", msg);
-      console.error(msg);
     }
 
     function setStatus(id, text, cls = "") {
@@ -282,84 +182,7 @@
       }
     }
 
-    function showSaved(msg = "Saved") {
-      const el = $("librarySaved");
-      el.textContent = msg;
-      clearTimeout(el._t);
-      el._t = setTimeout(() => { el.textContent = ""; }, 2000);
-    }
-
-    // ---------- Persistence ----------
-    function loadKnowledge() {
-      try {
-        const saved = localStorage.getItem(STORAGE_KEY);
-        return saved !== null ? saved : DEFAULT_KNOWLEDGE;
-      } catch {
-        return DEFAULT_KNOWLEDGE;
-      }
-    }
-
-    function saveKnowledge(value) {
-      try {
-        localStorage.setItem(STORAGE_KEY, value);
-        showSaved("Library saved");
-      } catch (e) {
-        showSaved("Save failed");
-        addError("Could not save knowledge library: " + e.message);
-      }
-    }
-
-    function loadSystemPrompt() {
-      try {
-        return localStorage.getItem(PROMPT_KEY) || personalities.default;
-      } catch {
-        return personalities.default;
-      }
-    }
-
-    function saveSystemPrompt(value) {
-      try {
-        localStorage.setItem(PROMPT_KEY, value);
-      } catch (_) {}
-    }
-
-    // ---------- UI helpers ----------
-    function applyPersonality() {
-      const val = $("personality").value;
-      if (val !== "custom" && personalities[val]) {
-        $("systemPrompt").value = personalities[val];
-        saveSystemPrompt($("systemPrompt").value);
-      }
-    }
-
-    function scheduleLibrarySave() {
-      clearTimeout(saveTimer);
-      saveTimer = setTimeout(() => {
-        saveKnowledge($("knowledgeLibrary").value);
-      }, 600);
-    }
-
-    // ---------- WebGPU / WebLLM ----------
-    async function checkWebGPU() {
-      if (!navigator.gpu) {
-        setStatus("webgpuStatus", "Not supported", "status-bad");
-        return false;
-      }
-      try {
-        const adapter = await navigator.gpu.requestAdapter();
-        if (!adapter) {
-          setStatus("webgpuStatus", "No adapter", "status-bad");
-          return false;
-        }
-        setStatus("webgpuStatus", "Available", "status-ok");
-        return true;
-      } catch (e) {
-        setStatus("webgpuStatus", "Error", "status-bad");
-        addError("WebGPU: " + e.message);
-        return false;
-      }
-    }
-
+    // Same URL building strategy as your original working code
     function buildCandidates() {
       const base = location.origin;
       return [
@@ -383,27 +206,32 @@
 
     async function loadWebLLM() {
       setStatus("webllmStatus", "Loading…", "status-warn");
+      addMessage("system", "Initializing WebLLM…");
+
       for (const url of buildCandidates()) {
         try {
-          addMessage("system", "Trying WebLLM:\n" + url);
+          console.log("[n3xn] Trying:", url);
           CreateMLCEngine = await tryImport(url);
           webllmReady = true;
           setStatus("webllmStatus", "Ready", "status-ok");
-          addMessage("system", "WebLLM ready.");
+          addMessage("system", "WebLLM ready. Select a model and click Load Model.");
           return true;
         } catch (err) {
-          addError("WebLLM fail: " + url + "\n" + (err.message || err));
+          console.log("[n3xn] CDN failed:", url, err.message);
         }
       }
+
       setStatus("webllmStatus", "Failed", "status-bad");
+      addMessage("system", "Could not load WebLLM from any CDN.");
       return false;
     }
 
-    async function loadSelectedModel() {
+    async function loadModel() {
       if (!webllmReady || !CreateMLCEngine) {
-        addError("WebLLM not ready");
+        addMessage("system", "WebLLM not ready");
         return;
       }
+
       const modelId = $("modelSelect").value;
       if (!modelId) { alert("Select a model"); return; }
       if (isGenerating) return;
@@ -419,39 +247,26 @@
             showProgress(true, "Loading model…", r.text || "", (r.progress || 0) * 100);
           }
         });
-        const short = modelId.replace("-Instruct-q4f16_1-MLC", "").replace("-q4f16_1-MLC", "");
+
+        const short = modelId.replace(/-Instruct.*/i, "").replace(/-q4f16.*/i, "");
         setStatus("modelStatus", short, "status-ok");
         setStatus("engineStatus", "Ready", "status-ok");
         $("sendBtn").disabled = false;
-        addMessage("system", "Model loaded: " + modelId);
+        addMessage("system", "Model loaded. Ready to chat.");
       } catch (err) {
         setStatus("engineStatus", "Failed", "status-bad");
-        setStatus("modelStatus", "None", "");
-        addError("Model load failed: " + (err.message || err));
+        setStatus("modelStatus", "None");
+        addMessage("system", "Model load failed: " + err.message);
+        console.error(err);
       } finally {
         showProgress(false);
         $("loadBtn").disabled = false;
       }
     }
 
-    function buildSystemPrompt() {
-      let prompt = ($("systemPrompt").value || "").trim() || personalities.default;
-
-      if ($("useLibrary")?.checked) {
-        const lib = ($("knowledgeLibrary").value || "").trim();
-        if (lib) {
-          prompt += "\n\n### Knowledge library (always use when relevant)\n" + lib;
-        }
-      }
-
-      if ($("shareErrorsWithAI")?.checked && recentErrors.length) {
-        prompt += "\n\nRecent browser errors:\n" + recentErrors.slice(-4).join("\n");
-      }
-      return prompt;
-    }
-
     async function sendMessage() {
       if (!engine || isGenerating) return;
+
       const input = $("userInput");
       const text = input.value.trim();
       if (!text) return;
@@ -461,77 +276,73 @@
       isGenerating = true;
       $("sendBtn").disabled = true;
       setStatus("engineStatus", "Thinking…", "status-warn");
+
       const replyEl = addMessage("assistant", "…");
 
       try {
+        const systemPrompt = ($("systemPrompt").value || DEFAULT_SYSTEM).trim();
         const messages = [
-          { role: "system", content: buildSystemPrompt() },
+          { role: "system", content: systemPrompt },
           { role: "user", content: text }
         ];
+
         let full = "";
         const completion = await engine.chat.completions.create({
-          messages, stream: true, temperature: 0.7,
+          messages, stream: true, temperature: 0.7, max_tokens: 256,
         });
+
         for await (const chunk of completion) {
           const delta = chunk.choices[0]?.delta?.content || "";
           full += delta;
           replyEl.textContent = full || "…";
           $("messages").scrollTop = $("messages").scrollHeight;
         }
+
         if (!full) replyEl.textContent = "(No response)";
       } catch (err) {
-        replyEl.textContent = "Error while generating.";
-        addError("Gen error: " + (err.message || err));
+        replyEl.textContent = "Error: " + err.message;
+        console.error(err);
       } finally {
         isGenerating = false;
         $("sendBtn").disabled = false;
         setStatus("engineStatus", "Ready", "status-ok");
-        $("userInput").focus();
       }
     }
 
-    function clearChat() {
+    $("loadBtn").addEventListener("click", loadModel);
+    $("clearBtn").addEventListener("click", () => {
       $("messages").innerHTML = "";
-      recentErrors = [];
       addMessage("system", "Chat cleared.");
-    }
-
-    // Events
-    $("loadBtn").addEventListener("click", loadSelectedModel);
-    $("clearBtn").addEventListener("click", clearChat);
+    });
     $("sendBtn").addEventListener("click", sendMessage);
-    $("personality").addEventListener("change", applyPersonality);
-    $("menuBtn").addEventListener("click", () => $("sidebar").classList.toggle("open"));
     $("userInput").addEventListener("keydown", (e) => {
       if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
     });
 
-    $("knowledgeLibrary").addEventListener("input", scheduleLibrarySave);
-    $("saveLibraryBtn").addEventListener("click", () => {
-      saveKnowledge($("knowledgeLibrary").value);
-    });
-    $("resetLibraryBtn").addEventListener("click", () => {
-      if (confirm("Reset knowledge library to the default n3xn facts?")) {
-        $("knowledgeLibrary").value = DEFAULT_KNOWLEDGE;
-        saveKnowledge(DEFAULT_KNOWLEDGE);
+    // Storage
+    function loadSystemPrompt() {
+      try {
+        return localStorage.getItem(STORAGE_KEY) || DEFAULT_SYSTEM;
+      } catch {
+        return DEFAULT_SYSTEM;
       }
-    });
+    }
+
+    function saveSystemPrompt(text) {
+      try {
+        localStorage.setItem(STORAGE_KEY, text);
+      } catch (e) {}
+    }
+
     $("systemPrompt").addEventListener("input", () => {
-      $("personality").value = "custom";
       saveSystemPrompt($("systemPrompt").value);
     });
 
     // Init
     (async function init() {
       $("systemPrompt").value = loadSystemPrompt();
-      $("knowledgeLibrary").value = loadKnowledge();
-
-      addMessage("system", "n3xn AI starting…");
-      await checkWebGPU();
+      addMessage("system", "n3xn AI V1 starting…");
       await loadWebLLM();
-      if (webllmReady) {
-        addMessage("system", "Ready. Knowledge library is active and editable in the sidebar.");
-      }
     })();
   </script>
 </body>
