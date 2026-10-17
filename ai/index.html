@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NRXN AIR — WASM Runtime</title>
+<style>
+:root{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#07090d;color:#e8edf7}body{margin:0;min-height:100vh;display:grid;place-items:center;background:radial-gradient(circle at 50% 0,#182033,#07090d 55%)}main{width:min(900px,92vw);padding:28px;border:1px solid #34405a;border-radius:18px;background:#0c111bcc;box-shadow:0 20px 80px #0008;backdrop-filter:blur(16px)}h1{margin-top:0}button{font:inherit;padding:10px 14px;border:1px solid #4b5a78;background:#111a2b;color:#fff;border-radius:10px;cursor:pointer}pre{white-space:pre-wrap;border:1px solid #273148;border-radius:12px;padding:16px;background:#06080c;min-height:160px}small{opacity:.7}
+</style></head>
+<body><main>
+<h1>NRXN AIR</h1><p>CPU-first WASM runtime foundation. No WebGPU. No backend.</p>
+<button id="load">Load AIR</button> <button id="test" disabled>Run WASM self-test</button> <button id="stop" disabled>Stop</button>
+<pre id="log">Booting NRXN AIR...</pre><small>Build 0.1 — runtime foundation, not yet an LLM.</small>
+<script type="module">
+import {NRXNAIR} from './air.js';
+const log=document.querySelector('#log'); const out=x=>log.textContent += '\n'+x;
+const ai=new NRXNAIR();
+load.onclick=async()=>{try{const i=await ai.load();out(`WASM ready · version ${i.version} · binary ${i.wasmBytes} bytes · initial memory ${i.memoryBytes} bytes`);test.disabled=false;stop.disabled=false;load.disabled=true;}catch(e){out('ERROR: '+e.message)}};
+test.onclick=async()=>{try{const r=await ai.selfTest('NRXN AIR / WASM / CPU',8*1024*1024);out(`Self-test OK · heap ${r.capacity} · used ${r.used} · checksum ${r.checksum}`)}catch(e){out('ERROR: '+e.message)}};
+stop.onclick=()=>{ai.stop();out('AIR stopped');stop.disabled=true;test.disabled=true;load.disabled=false};
+</script></main></body></html>
