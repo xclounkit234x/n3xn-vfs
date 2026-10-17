@@ -1,493 +1,192 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>n3xn AI - V1.1 Optimized</title>
-  <style>
-    :root {
-      --bg: #0f1115; --panel: #161a22; --card: #1c212b; --border: #2a3140;
-      --text: #e8ecf4; --muted: #8b95a8; --accent: #6ea8fe;
-      --good: #3dd68c; --warn: #f5a524; --bad: #f31260;
-      --user: #2a3a5c; --assistant: #1e2430;
-    }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body { width: 100%; height: 100%; }
-    body {
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: var(--bg); color: var(--text);
-      height: 100vh; display: flex; flex-direction: column; overflow: hidden;
-      contain: layout style paint;
-    }
-    header {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 12px 16px; background: var(--panel);
-      border-bottom: 1px solid var(--border); gap: 12px; flex-wrap: wrap;
-      contain: layout style;
-    }
-    .logo { font-weight: 700; font-size: 1.15rem; color: var(--accent); white-space: nowrap; }
-    .header-controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-    select, button {
-      background: var(--card); color: var(--text); border: 1px solid var(--border);
-      border-radius: 8px; padding: 8px 12px; font-size: 0.9rem; cursor: pointer;
-      contain: layout style;
-    }
-    select:hover, button:hover { border-color: var(--accent); outline: none; }
-    button.primary { background: var(--accent); color: #0f1115; border-color: var(--accent); font-weight: 600; }
-    button.primary:hover { filter: brightness(1.08); }
-    button:disabled { opacity: 0.5; cursor: not-allowed; }
-    main { flex: 1; display: flex; overflow: hidden; contain: layout style paint; }
-    aside {
-      width: 280px; background: var(--panel); border-right: 1px solid var(--border);
-      display: flex; flex-direction: column; overflow-y: auto; flex-shrink: 0;
-      contain: layout style;
-    }
-    .sidebar-section { padding: 12px 14px; border-bottom: 1px solid var(--border); contain: layout style; }
-    .sidebar-section h3 {
-      font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em;
-      color: var(--muted); margin-bottom: 8px;
-    }
-    .status-line { font-size: 0.85rem; margin-bottom: 6px; display: flex; justify-content: space-between; gap: 8px; }
-    .status-ok { color: var(--good); } .status-warn { color: var(--warn); } .status-bad { color: var(--bad); }
-    label { display: block; font-size: 0.8rem; color: var(--muted); margin-bottom: 4px; }
-    textarea { width: 100%; background: var(--card); border: 1px solid var(--border); border-radius: 6px; color: var(--text); padding: 8px; font-size: 0.8rem; font-family: inherit; }
-    textarea.system-prompt { height: 60px; resize: vertical; }
-    .chat-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; contain: layout style paint; }
-    #messages {
-      flex: 1; overflow-y: auto; padding: 16px;
-      display: flex; flex-direction: column; gap: 12px;
-      contain: layout style;
-    }
-    .msg {
-      max-width: 90%; padding: 10px 14px; border-radius: 12px;
-      line-height: 1.5; font-size: 0.95rem; word-break: break-word; white-space: pre-wrap;
-      contain: layout style paint;
-    }
-    .msg.user { align-self: flex-end; background: var(--user); border-bottom-right-radius: 4px; }
-    .msg.assistant { align-self: flex-start; background: var(--assistant); border: 1px solid var(--border); border-bottom-left-radius: 4px; }
-    .msg.system { align-self: center; background: transparent; color: var(--muted); font-size: 0.8rem; text-align: center; max-width: 100%; }
-    .input-area {
-      padding: 12px 16px 16px; border-top: 1px solid var(--border);
-      background: var(--panel); display: flex; gap: 10px; align-items: flex-end;
-      contain: layout style;
-    }
-    #userInput {
-      flex: 1; background: var(--card); border: 1px solid var(--border);
-      border-radius: 12px; color: var(--text); padding: 12px 14px;
-      font-size: 0.95rem; resize: none; min-height: 44px; max-height: 120px; font-family: inherit;
-    }
-    #userInput:focus { outline: none; border-color: var(--accent); }
-    #sendBtn { height: 44px; padding: 0 16px; border-radius: 12px; }
-    #progressOverlay {
-      display: none; position: fixed; inset: 0; background: rgba(15,17,21,0.85);
-      z-index: 100; align-items: center; justify-content: center; flex-direction: column; gap: 16px;
-    }
-    #progressOverlay.visible { display: flex; }
-    .progress-box {
-      background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
-      padding: 20px 28px; min-width: 280px; max-width: 90vw; text-align: center;
-    }
-    .progress-bar-bg { height: 6px; background: var(--card); border-radius: 3px; overflow: hidden; margin: 12px 0 8px; }
-    .progress-bar { height: 100%; background: var(--accent); width: 0%; transition: width 0.2s; }
-    .perf-info { font-size: 0.7rem; color: var(--muted); margin-top: 8px; line-height: 1.2; }
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>n3xn AI — Local Agent</title>
+<style>
+:root{--bg:#07090e;--panel:rgba(15,19,30,.78);--panel2:rgba(20,25,39,.72);--line:#273149;--text:#e9eefb;--muted:#8c98b3;--accent:#6ea8ff;--accent2:#9a7cff;--good:#45e0a1;--warn:#ffca62;--bad:#ff657a;--shadow:0 18px 70px rgba(0,0,0,.42)}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;background:radial-gradient(circle at 20% 10%,#101a33 0,#07090e 45%,#040509 100%);color:var(--text);font:14px/1.5 Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}body{overflow:hidden}button,input,textarea,select{font:inherit;color:inherit}button{border:1px solid var(--line);background:rgba(255,255,255,.045);border-radius:10px;padding:8px 11px;cursor:pointer}button:hover{border-color:var(--accent);background:rgba(110,168,255,.08)}button.primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#07101e;border:0;font-weight:800}button:disabled{opacity:.45;cursor:not-allowed}input,textarea,select{width:100%;border:1px solid var(--line);background:rgba(4,7,13,.72);border-radius:10px;padding:9px 10px;outline:0}input:focus,textarea:focus,select:focus{border-color:var(--accent)}
+#fx{position:fixed;inset:0;z-index:-1;opacity:.7}.app{height:100%;display:grid;grid-template-columns:290px minmax(0,1fr) 300px;gap:10px;padding:10px}.glass{background:var(--panel);border:1px solid rgba(120,145,200,.17);box-shadow:var(--shadow);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border-radius:18px;overflow:hidden}.left,.right{display:flex;flex-direction:column;min-height:0}.brand{padding:18px;border-bottom:1px solid var(--line)}.brand b{font-size:20px;letter-spacing:.04em}.brand span{color:var(--accent);text-shadow:0 0 22px rgba(110,168,255,.5)}.sub{font-size:11px;color:var(--muted);margin-top:3px}.scroll{overflow:auto;min-height:0}.section{padding:13px;border-bottom:1px solid rgba(39,49,73,.72)}.section h3{font-size:10px;text-transform:uppercase;letter-spacing:.14em;color:var(--muted);margin:0 0 9px}.row{display:flex;gap:7px;align-items:center}.row>*{flex:1}.stack{display:grid;gap:7px}.status{display:flex;justify-content:space-between;gap:8px;margin:5px 0;font-size:12px}.ok{color:var(--good)}.warn{color:var(--warn)}.bad{color:var(--bad)}.muted{color:var(--muted)}.tiny{font-size:11px}.pill{border:1px solid var(--line);border-radius:999px;padding:3px 7px;font-size:10px;color:var(--muted)}
+.chat{display:flex;flex-direction:column;min-width:0;min-height:0}.topbar{padding:10px 13px;border-bottom:1px solid var(--line);display:flex;gap:8px;align-items:center}.topbar .title{font-weight:800}.topbar .spacer{flex:1}.messages{flex:1;overflow:auto;padding:20px;display:flex;flex-direction:column;gap:13px}.msg{max-width:92%;padding:12px 14px;border-radius:14px;border:1px solid rgba(120,145,200,.12);box-shadow:0 8px 30px rgba(0,0,0,.15)}.msg.user{align-self:flex-end;background:rgba(55,82,132,.38);border-bottom-right-radius:5px}.msg.assistant{align-self:flex-start;background:rgba(20,26,42,.78);border-bottom-left-radius:5px}.msg.system{align-self:center;max-width:100%;background:transparent;border:0;color:var(--muted);font-size:12px;text-align:center}.msg pre{overflow:auto;background:#05070b;border:1px solid var(--line);padding:10px;border-radius:9px}.msg code{font-family:"SFMono-Regular",Consolas,monospace}.msg p{margin:.25em 0}.msg ul,.msg ol{padding-left:22px}.msg a{color:var(--accent)}.tool{font-size:11px;color:var(--muted);border-left:2px solid var(--accent);padding-left:8px;margin-top:8px}.inputbar{border-top:1px solid var(--line);padding:12px;display:grid;grid-template-columns:1fr auto;gap:8px}.inputbar textarea{resize:none;min-height:48px;max-height:160px}.sendcol{display:flex;flex-direction:column;gap:7px}.sendcol button{height:100%}
+.console{height:210px;border-top:1px solid var(--line);display:flex;flex-direction:column}.consoleHead{padding:8px 11px;display:flex;gap:7px;border-bottom:1px solid var(--line)}.consoleOut{flex:1;overflow:auto;padding:9px 11px;background:#03050a;font:11px/1.45 ui-monospace,SFMono-Regular,Consolas,monospace;white-space:pre-wrap}.consoleIn{display:flex;border-top:1px solid var(--line)}.consoleIn input{border:0;border-radius:0;background:#06080e;font-family:ui-monospace,SFMono-Regular,Consolas,monospace}
+.filebox{border:1px dashed #3a4865;padding:12px;border-radius:11px;text-align:center;color:var(--muted);font-size:12px}.list{display:grid;gap:5px;max-height:180px;overflow:auto}.item{padding:8px;border:1px solid rgba(120,145,200,.12);border-radius:9px;background:rgba(255,255,255,.025)}.item b{display:block}.toolbar{display:flex;gap:6px;flex-wrap:wrap}.slider{accent-color:var(--accent)}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.68);display:none;align-items:center;justify-content:center;z-index:50}.modal.show{display:flex}.modalBox{width:min(760px,94vw);max-height:90vh;overflow:auto;background:#0c1019;border:1px solid var(--line);border-radius:16px;padding:17px;box-shadow:var(--shadow)}.modalBox h2{margin-top:0}.danger{color:var(--bad)}@media(max-width:1100px){.app{grid-template-columns:240px minmax(0,1fr)}.right{display:none}}@media(max-width:700px){.app{grid-template-columns:1fr;padding:0}.left{display:none}.glass{border-radius:0}.messages{padding:12px}.msg{max-width:98%}}
+
+/* V3 GLASS / ADAPTIVE PERFORMANCE LAYER */
+:root{--glass-hi:rgba(255,255,255,.075);--glass-lo:rgba(255,255,255,.025);--glass-border:rgba(180,205,255,.18);--glow:rgba(110,168,255,.28)}
+body:before{content:"";position:fixed;inset:-20%;pointer-events:none;background:radial-gradient(circle at 15% 20%,rgba(89,127,255,.10),transparent 30%),radial-gradient(circle at 82% 12%,rgba(173,105,255,.08),transparent 28%),radial-gradient(circle at 70% 85%,rgba(39,221,190,.055),transparent 30%);filter:blur(35px);z-index:-1}
+.glass{background:linear-gradient(135deg,rgba(25,31,48,.72),rgba(8,12,21,.60));border:1px solid var(--glass-border);box-shadow:0 24px 90px rgba(0,0,0,.48),inset 0 1px 0 rgba(255,255,255,.07),inset 0 0 35px rgba(120,160,255,.025);backdrop-filter:blur(28px) saturate(145%);-webkit-backdrop-filter:blur(28px) saturate(145%)}
+.section,.topbar,.console,.inputbar{background:linear-gradient(180deg,rgba(255,255,255,.018),rgba(255,255,255,.006))}
+.brand{background:linear-gradient(135deg,rgba(110,168,255,.07),rgba(154,124,255,.045));box-shadow:inset 0 1px 0 rgba(255,255,255,.06)}
+.msg{background:linear-gradient(135deg,rgba(255,255,255,.055),rgba(255,255,255,.018));backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);box-shadow:0 12px 42px rgba(0,0,0,.18),inset 0 1px 0 rgba(255,255,255,.055)}
+.msg.user{background:linear-gradient(135deg,rgba(70,112,190,.34),rgba(77,63,145,.22))}
+.msg.assistant{background:linear-gradient(135deg,rgba(30,39,63,.68),rgba(16,21,35,.52))}
+button{background:linear-gradient(180deg,rgba(255,255,255,.065),rgba(255,255,255,.025));box-shadow:inset 0 1px 0 rgba(255,255,255,.055),0 6px 22px rgba(0,0,0,.10)}
+input,textarea,select{background:linear-gradient(180deg,rgba(4,7,13,.62),rgba(17,23,36,.48));box-shadow:inset 0 1px 0 rgba(255,255,255,.035)}
+.perfgrid{display:grid;grid-template-columns:1fr 1fr;gap:6px}.metric{padding:8px;border:1px solid rgba(180,205,255,.12);border-radius:10px;background:linear-gradient(135deg,rgba(255,255,255,.045),rgba(255,255,255,.012))}.metric b{display:block;font-size:13px}.metric span{font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}.meter{height:5px;border-radius:99px;background:rgba(255,255,255,.06);overflow:hidden;margin-top:7px}.meter i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--good),var(--warn),var(--bad));transition:width .35s ease}.adaptiveBadge{display:inline-flex;align-items:center;gap:5px;padding:3px 7px;border-radius:99px;background:rgba(69,224,161,.08);border:1px solid rgba(69,224,161,.18);font-size:10px}.adaptiveBadge.hot{background:rgba(255,101,122,.08);border-color:rgba(255,101,122,.2)}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
+</style>
 </head>
 <body>
-  <div id="progressOverlay">
-    <div class="progress-box">
-      <div id="progressTitle" style="font-weight:600;margin-bottom:4px">Loading…</div>
-      <div class="progress-bar-bg"><div class="progress-bar" id="progressBar"></div></div>
-      <div id="progressText" style="font-size:0.9rem;color:var(--muted)">Starting…</div>
-    </div>
+<canvas id="fx"></canvas>
+<div class="app">
+<aside class="left glass">
+ <div class="brand"><b>n3xn <span>AI</span></b><div class="sub">LOCAL AGENT / V3 GLASS · ADAPTIVE CPU</div></div>
+ <div class="scroll">
+  <div class="section"><h3>Runtime</h3>
+   <div class="status"><span>Inference</span><span id="rt" class="warn">not loaded</span></div>
+   <div class="status"><span>Device</span><span id="device" class="ok">WASM / CPU</span></div>
+   <div class="status"><span>WebGPU</span><span class="muted">off by default</span></div>
+   <div class="status"><span>Agent</span><span id="agent" class="muted">idle</span></div>
   </div>
+  <div class="section"><h3>Model</h3><div class="stack"><select id="model"><option value="onnx-community/Qwen2.5-0.5B-Instruct">Qwen2.5 0.5B Instruct — CPU WASM</option><option value="onnx-community/SmolLM2-360M-ONNX">SmolLM2 360M — CPU WASM</option></select><button id="load" class="primary">Load CPU model</button><button id="unload">Unload</button></div><div class="tiny muted" id="loadInfo" style="margin-top:7px">Model weights are fetched and cached locally by the runtime.</div></div>
+  <div class="section"><h3>Agent controls</h3><div class="stack"><label class="tiny muted">Tokens / 500ms <input id="rate" class="slider" type="range" min="2" max="48" value="12"></label><label class="tiny muted">Cooling ms <input id="cool" class="slider" type="range" min="0" max="1500" value="220"></label><label class="tiny muted">Max output <input id="max" type="number" min="32" max="4096" value="512"></label><label class="tiny muted"><input id="think" type="checkbox" checked> allow reflect/think phase</label><label class="tiny muted"><input id="autoTools" type="checkbox" checked> allow automatic tools</label><label class="tiny muted"><input id="askJS" type="checkbox" checked> confirm AI JS execution</label></div></div>
+  <div class="section"><h3>Adaptive performance</h3>
+   <div class="perfgrid">
+    <div class="metric"><span>Lag score</span><b id="lagScore">0%</b></div>
+    <div class="metric"><span>Frame health</span><b id="frameHealth">good</b></div>
+    <div class="metric"><span>Token slice</span><b id="sliceNow">12</b></div>
+    <div class="metric"><span>Cooldown</span><b id="coolNow">220ms</b></div>
+   </div>
+   <div class="meter"><i id="lagMeter"></i></div>
+   <div style="margin-top:8px"><span id="adaptiveBadge" class="adaptiveBadge">● adaptive governor active</span></div>
+   <div class="tiny muted" style="margin-top:7px">Detects frame drops and long tasks, then automatically reduces inference slices, yields longer, and gives the browser more breathing room.</div>
+  </div>
+  <div class="section"><h3>System</h3><textarea id="system" rows="5">You are n3xn AI, a local browser agent. You can use tools to inspect the user's local n3xn memory, conversations, uploaded files, and a sandboxed JavaScript runtime. Use tools when useful. Be honest about what you can access. Never claim to have accessed something unless a tool returned it. You may reflect privately, but do not reveal hidden chain-of-thought; provide concise conclusions instead.</textarea></div>
+  <div class="section"><h3>Storage</h3><div class="toolbar"><button id="export">Export backup</button><button id="clearStore">Clear local data</button></div><div class="tiny muted" id="storeInfo" style="margin-top:7px">IndexedDB: initializing…</div></div>
+ </div>
+</aside>
+<section class="chat glass">
+ <div class="topbar"><div class="title">Local Agent</div><span class="pill" id="mode">CPU-FIRST</span><span class="spacer"></span><button id="newChat">New chat</button><button id="settings">Tools</button></div>
+ <div id="messages" class="messages"></div>
+ <div class="inputbar"><textarea id="input" placeholder="Ask n3xn AI…  Try: “remember that I like …” or “inspect my uploaded files”"></textarea><div class="sendcol"><button id="stop">Stop</button><button id="send" class="primary">Send</button></div></div>
+ <div class="console"><div class="consoleHead"><b>AI console</b><span class="muted tiny">commands: /help /memory /chats /files /js</span></div><div id="consoleOut" class="consoleOut"></div><div class="consoleIn"><input id="consoleIn" placeholder="/memory list"></div></div>
+</section>
+<aside class="right glass">
+ <div class="section"><h3>Persistent memory</h3><div class="list" id="memories"></div><button id="addMem" style="margin-top:7px;width:100%">+ Remember something</button></div>
+ <div class="section"><h3>Conversations</h3><div class="list" id="chats"></div></div>
+ <div class="section"><h3>Uploaded files</h3><input id="files" type="file" multiple hidden><button id="upload" style="width:100%">Upload files</button><div class="list" id="fileList" style="margin-top:7px"></div></div>
+ <div class="section"><h3>Agent activity</h3><div id="activity" class="tiny muted">No tool calls yet.</div></div>
+</aside>
+</div>
+<div id="modal" class="modal"><div class="modalBox"><div id="modalContent"></div><div style="text-align:right;margin-top:12px"><button id="modalClose">Close</button></div></div></div>
+<script type="module">
+const $=id=>document.getElementById(id), sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const DB='n3xn-ai-v2', STORE={mem:'memories',chats:'chats',files:'files',meta:'meta'};
+let db=null, pipe=null, busy=false, stop=false, currentChat=null, chatMessages=[];
+const CFG={version:2, model:'onnx-community/Qwen2.5-0.5B-Instruct', max:512, rate:12, cool:220};
+function uid(p='id'){return p+'-'+crypto.randomUUID()}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function markdown(s){let x=esc(s);x=x.replace(/```([\w+-]*)\n([\s\S]*?)```/g,(_,l,c)=>`<pre><code class="lang-${l}">${c}</code></pre>`);x=x.replace(/`([^`]+)`/g,'<code>$1</code>');x=x.replace(/^### (.*)$/gm,'<h3>$1</h3>').replace(/^## (.*)$/gm,'<h2>$1</h2>').replace(/^# (.*)$/gm,'<h1>$1</h1>');x=x.replace(/^[-*] (.*)$/gm,'<li>$1</li>').replace(/(<li>.*<\/li>\n?)+/g,m=>'<ul>'+m+'</ul>');x=x.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\*(.*?)\*/g,'<em>$1</em>');x=x.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,'<a href="$2" target="_blank" rel="noopener">$1</a>');return x.replace(/\n\n/g,'<br><br>').replace(/\n/g,'<br>')}
+function log(s){$('consoleOut').textContent+=`[${new Date().toLocaleTimeString()}] ${s}\n`;$('consoleOut').scrollTop=$('consoleOut').scrollHeight}
+function activity(s){$('activity').textContent=s;log(s)}
+function openDB(){return new Promise((res,rej)=>{const r=indexedDB.open(DB,2);r.onupgradeneeded=e=>{const d=e.target.result;Object.values(STORE).forEach(n=>{if(!d.objectStoreNames.contains(n))d.createObjectStore(n,{keyPath:'id'})})};r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
+async function put(store,obj){return new Promise((res,rej)=>{const t=db.transaction(store,'readwrite');t.objectStore(store).put(obj);t.oncomplete=()=>res();t.onerror=()=>rej(t.error)})}
+async function del(store,id){return new Promise((res,rej)=>{const t=db.transaction(store,'readwrite');t.objectStore(store).delete(id);t.oncomplete=()=>res();t.onerror=()=>rej(t.error)})}
+async function all(store){return new Promise((res,rej)=>{const t=db.transaction(store,'readonly');const r=t.objectStore(store).getAll();r.onsuccess=()=>res(r.result||[]);r.onerror=()=>rej(r.error)})}
+async function get(store,id){return new Promise((res,rej)=>{const t=db.transaction(store,'readonly');const r=t.objectStore(store).get(id);r.onsuccess=()=>res(r.result||null);r.onerror=()=>rej(r.error)})}
+async function saveMeta(){await put(STORE.meta,{id:'settings',system:$('system').value,model:$('model').value,rate:+$('rate').value,cool:+$('cool').value,max:+$('max').value,think:$('think').checked,autoTools:$('autoTools').checked,askJS:$('askJS').checked})}
+async function loadMeta(){const m=await get(STORE.meta,'settings');if(!m)return;$('system').value=m.system||$('system').value;$('model').value=m.model||$('model').value;$('rate').value=m.rate||12;$('cool').value=m.cool||220;$('max').value=m.max||512;$('think').checked=m.think!==false;$('autoTools').checked=m.autoTools!==false;$('askJS').checked=m.askJS!==false}
+async function saveChat(){if(!currentChat)return;currentChat.updated=Date.now();currentChat.messages=chatMessages;await put(STORE.chats,currentChat);renderChats()}
+function renderMessage(role,text,html=false){const d=document.createElement('div');d.className='msg '+role;if(html)d.innerHTML=text;else d.textContent=text;$('messages').appendChild(d);$('messages').scrollTop=$('messages').scrollHeight;return d}
+function renderHistory(){ $('messages').innerHTML=''; for(const m of chatMessages)renderMessage(m.role,m.content,m.role==='assistant') }
+async function newChat(){currentChat={id:uid('chat'),title:'New chat',created:Date.now(),updated:Date.now(),messages:[]};chatMessages=[];await saveChat();renderHistory();renderChats()}
+async function renderChats(){const xs=(await all(STORE.chats)).sort((a,b)=>b.updated-a.updated);$('chats').innerHTML=xs.map(c=>`<div class="item" data-chat="${esc(c.id)}"><b>${esc(c.title||'Untitled')}</b><span class="tiny muted">${new Date(c.updated).toLocaleString()}</span></div>`).join('');$('chats').querySelectorAll('[data-chat]').forEach(e=>e.onclick=async()=>{const c=await get(STORE.chats,e.dataset.chat);if(c){currentChat=c;chatMessages=c.messages||[];renderHistory()}})}
+async function renderMemories(){const xs=(await all(STORE.mem)).sort((a,b)=>b.updated-a.updated);$('memories').innerHTML=xs.length?xs.map(m=>`<div class="item"><b>${esc(m.text)}</b><span class="tiny muted">${new Date(m.updated).toLocaleString()}</span></div>`).join(''):'<div class="tiny muted">No memories yet.</div>'}
+async function renderFiles(){const xs=await all(STORE.files);$('fileList').innerHTML=xs.length?xs.map(f=>`<div class="item"><b>${esc(f.name)}</b><span class="tiny muted">${f.size.toLocaleString()} bytes · ${f.type||'unknown'}</span></div>`).join(''):'<div class="tiny muted">No files.</div>'}
+async function storeInfo(){const [m,c,f]=await Promise.all([all(STORE.mem),all(STORE.chats),all(STORE.files)]);$('storeInfo').textContent=`IndexedDB · ${m.length} memories · ${c.length} chats · ${f.length} files`}
+async function remember(text){const m={id:uid('mem'),text:String(text).slice(0,10000),created:Date.now(),updated:Date.now()};await put(STORE.mem,m);await renderMemories();await storeInfo();return m}
+async function searchMem(q){const xs=await all(STORE.mem);const terms=String(q).toLowerCase().split(/\s+/).filter(Boolean);return xs.filter(m=>terms.every(t=>m.text.toLowerCase().includes(t))).sort((a,b)=>b.updated-a.updated).slice(0,20)}
+async function searchChats(q){const xs=await all(STORE.chats);const z=String(q).toLowerCase();return xs.filter(c=>(c.title+' '+(c.messages||[]).map(m=>m.content).join(' ')).toLowerCase().includes(z)).sort((a,b)=>b.updated-a.updated).slice(0,10)}
+async function fileRead(id){const f=await get(STORE.files,id);if(!f)return null;const max=250000;let text='';try{text=await f.blob.slice(0,max).text()}catch{}return {...f,content:text,truncated:f.size>max}}
+async function listFiles(){return (await all(STORE.files)).map(f=>({id:f.id,name:f.name,size:f.size,type:f.type,modified:f.modified}))}
+async function runSandboxJS(code){return new Promise((resolve,reject)=>{const frame=document.createElement('iframe');frame.sandbox='allow-scripts';frame.style.display='none';const nonce=crypto.randomUUID();let done=false;const timer=setTimeout(()=>{if(done)return;done=true;window.removeEventListener('message',on);frame.remove();reject(new Error('JS sandbox timed out after 3000ms'))},3000);function on(e){if(e.source!==frame.contentWindow||e.data?.nonce!==nonce)return;clearTimeout(timer);done=true;window.removeEventListener('message',on);frame.remove();if(e.data.ok)resolve(e.data.value);else reject(new Error(e.data.error||'sandbox error'))}window.addEventListener('message',on);const payload=`<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; connect-src 'none'; img-src data:; style-src 'unsafe-inline'"><script>(async()=>{try{const value=await (async()=>{${code}\n})(), safe=typeof value==='undefined'?undefined:JSON.parse(JSON.stringify(value));parent.postMessage({nonce:${JSON.stringify(nonce)},ok:true,value:safe},'*')}catch(e){parent.postMessage({nonce:${JSON.stringify(nonce)},ok:false,error:String(e&&e.stack||e)},'*')}})();<\/script>`;frame.srcdoc=payload;document.body.appendChild(frame)})}
+function requestJSApproval(code){return new Promise(resolve=>{const finish=ok=>{ $('modal').classList.remove('show'); resolve(ok) };$('modalContent').innerHTML=`<h2>Allow AI JavaScript?</h2><p class="muted">The code will run locally in a sandboxed iframe with no network access and no parent-page access.</p><pre><code>${esc(code)}</code></pre><div class="toolbar"><button id="deny">Deny</button><button id="allow" class="primary">Run locally</button></div>`;$('modal').classList.add('show');$('deny').onclick=()=>finish(false);$('allow').onclick=()=>finish(true)})}
+const TOOLS={
+ 'memory.list':async()=>all(STORE.mem),
+ 'memory.search':async a=>searchMem(a?.query||''),
+ 'memory.save':async a=>remember(a?.text||''),
+ 'chats.list':async()=>{const x=await all(STORE.chats);return x.map(c=>({id:c.id,title:c.title,updated:c.updated,messages:c.messages?.length||0}))},
+ 'chats.search':async a=>searchChats(a?.query||''),
+ 'chats.show':async a=>get(STORE.chats,a?.id),
+ 'files.list':async()=>listFiles(),
+ 'files.read':async a=>fileRead(a?.id),
+ 'js.run':async a=>{const code=a?.code||'';if($('askJS').checked){const ok=await requestJSApproval(code);if(!ok)throw new Error('USER_DENIED: JavaScript execution was denied by the user.')}return await runSandboxJS(code)}
+};
+async function callTool(name,args,fromAI=true){activity('tool → '+name);if(!TOOLS[name])throw new Error('Unknown tool: '+name);try{const r=await TOOLS[name](args||{});activity('tool ✓ '+name);return r}catch(e){activity('tool ✗ '+name+': '+e.message);throw e}}
+function parseToolCalls(text){const out=[];const re=/<tool\s+name=["']([^"']+)["']\s*>([\s\S]*?)<\/tool>/gi;let m;while((m=re.exec(text)))try{out.push({name:m[1],args:JSON.parse(m[2])})}catch{out.push({name:m[1],args:{_raw:m[2]}})}return out}
+function toolPrompt(){return `\n\nLOCAL TOOLS. When you need one, emit exactly: <tool name="TOOL_NAME">{"arg":"value"}</tool>. Available: memory.list, memory.search {query}, memory.save {text}, chats.list, chats.search {query}, chats.show {id}, files.list, files.read {id}, js.run {code}. Tool results will be supplied to you. Do not invent tool results. You may use multiple tools. For JavaScript, write only sandbox-compatible JS; it has no network and no access to the parent page.\n`}
+function compactContext(){const max=32;return chatMessages.slice(-max)}
+async function loadRuntime(){if(pipe)return;busy=true;$('load').disabled=true;$('rt').textContent='loading';$('agent').textContent='loading CPU/WASM';try{const mod=await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.3.1');mod.env.allowLocalModels=true;mod.env.allowRemoteModels=true;mod.env.backends.onnx.wasm.numThreads=Math.max(1,Math.min(2,navigator.hardwareConcurrency||2));pipe=await mod.pipeline('text-generation',$('model').value,{dtype:'q4',device:'wasm'});$('rt').textContent='ready';$('rt').className='ok';$('agent').textContent='idle';log('CPU/WASM model loaded; WebGPU was not requested.');}catch(e){pipe=null;$('rt').textContent='failed';$('rt').className='bad';$('agent').textContent='error';log('Runtime error: '+e.message);renderMessage('system','CPU/WASM model failed to load. See console for details.');}finally{busy=false;$('load').disabled=false}}
+async function unload(){pipe=null;$('rt').textContent='not loaded';$('rt').className='warn';$('agent').textContent='idle';log('Model reference released. Browser may retain library/model cache until pressure or cache cleanup.')}
+const Governor={lag:0,frame:16,frames:[],long:0,last:performance.now(),baseRate:12,baseCool:220,level:'good',running:false,ema:0,
+  init(){this.baseRate=+$('rate').value||12;this.baseCool=+$('cool').value||220;let prev=performance.now();const tick=t=>{const dt=t-prev;prev=t;this.frame=dt;this.frames.push(dt);if(this.frames.length>45)this.frames.shift();const bad=Math.max(0,Math.min(1,(dt-16.7)/70));this.ema=this.ema*.9+bad*.1;requestAnimationFrame(tick)};requestAnimationFrame(tick);
+    if('PerformanceObserver' in window){try{const po=new PerformanceObserver(list=>{for(const x of list.getEntries())if(x.duration>50)this.long=Math.min(100,this.long+(x.duration>200?8:3))});po.observe({entryTypes:['longtask']})}catch{}}
+    setInterval(()=>this.sample(),500);this.sample()},
+  sample(){const avg=this.frames.length?this.frames.reduce((a,b)=>a+b,0)/this.frames.length:16.7;const dropped=this.frames.filter(x=>x>33).length/Math.max(1,this.frames.length);this.long*=.84;this.lag=Math.round(Math.min(100,(this.ema*100)*.55+dropped*100*.30+this.long*.15));this.level=this.lag<18?'good':this.lag<38?'watch':this.lag<62?'slow':'safe';this.render()},
+  plan(){const b=this.baseRate;let mult=this.lag<18?1:this.lag<38?.72:this.lag<62?.45:.25;let slice=Math.max(2,Math.round(b*mult));let cool=this.baseCool+(this.lag<18?0:this.lag<38?180:this.lag<62?550:1100);if(this.frame>55)cool+=350;if(this.frame>100)cool+=650;return {slice, cool:Math.min(5000,cool), yield:Math.min(1500,40+this.lag*10)}},
+  render(){const p=this.plan();if($('lagScore'))$('lagScore').textContent=this.lag+'%';if($('frameHealth')){$('frameHealth').textContent=this.level; $('frameHealth').className=this.level==='good'?'ok':this.level==='safe'?'bad':'warn'}if($('sliceNow'))$('sliceNow').textContent=p.slice;if($('coolNow'))$('coolNow').textContent=p.cool+'ms';if($('lagMeter'))$('lagMeter').style.width=this.lag+'%';if($('adaptiveBadge')){const hot=this.level==='safe';$('adaptiveBadge').className='adaptiveBadge'+(hot?' hot':'');$('adaptiveBadge').textContent=hot?'● SAFE MODE — heavily yielding':'● adaptive governor active'}},
+  async yield(reason='work'){const p=this.plan();$('agent').textContent=reason+' · '+p.cool+'ms';await sleep(p.yield);await new Promise(r=>requestAnimationFrame(()=>r()));await sleep(p.cool)},
+  async beforeSlice(){const p=this.plan();await sleep(p.cool?Math.min(p.cool,180):0);return p.slice},
+  setBase(){this.baseRate=+$('rate').value||12;this.baseCool=+$('cool').value||220;this.render()}
+};
+async function generateOnce(messages,maxTokens){if(!pipe)throw new Error('Load the CPU model first.');let full='',remaining=maxTokens,passes=0;while(remaining>0&&!stop){const slice=Math.min(await Governor.beforeSlice(),remaining);const context=full?messages.concat([{role:'assistant',content:full},{role:'user',content:'Continue the answer from exactly where it stopped. Output only the continuation; do not repeat previous text.'}]):messages;const out=await pipe(context,{max_new_tokens:slice,do_sample:true,temperature:.7,top_p:.85,repetition_penalty:1.08,return_full_text:false});let r=out?.[0]?.generated_text;if(Array.isArray(r))r=r[r.length-1]?.content||'';r=String(r||'');if(!r)break;full+=r;remaining-=slice;passes++;if(/[.!?]\s*$/.test(r)&&passes>=2&&full.length>120)break;await Governor.yield('cooling');}return full}
+async function agentTurn(user){
+ if(busy)return;
+ busy=true;stop=false;$('send').disabled=true;$('agent').textContent='thinking';
+ chatMessages.push({role:'user',content:user});renderMessage('user',user);
+ if(!currentChat)await newChat();
+ currentChat.title=currentChat.title==='New chat'?user.slice(0,55):currentChat.title;
+ await saveChat();
+ let tools=0,final='';
+ const max=Math.max(32,+$('max').value||512);
+ let working=compactContext();
+ const system=$('system').value+($('think').checked?'\nYou may silently reflect before answering. Never reveal private chain-of-thought.':'')+toolPrompt();
+ for(let pass=0;pass<8&&!stop;pass++){
+   const prompt=[{role:'system',content:system},...working];
+   $('agent').textContent=pass===0&&$('think').checked?'reflecting':'working';
+   if(pass>0) await Governor.yield('between tools');
+   const start=performance.now();
+   const text=await generateOnce(prompt,Math.min(160,max));
+   if(stop)break;
+   const calls=$('autoTools').checked?parseToolCalls(text):[];
+   if(!calls.length){final=text;break}
+   const visible=text.replace(/<tool[\s\S]*?<\/tool>/gi,'').trim();
+   if(visible){renderMessage('assistant',markdown(visible),true);final+=visible+'\n'}
+   for(const c of calls){
+     if(tools++>=8)break;
+     try{
+       await Governor.yield('tool pacing');
+       const result=await callTool(c.name,c.args,true);
+       working.push({role:'assistant',content:text});
+       working.push({role:'user',content:`TOOL RESULT for ${c.name}:\n${JSON.stringify(result).slice(0,30000)}\nContinue the task. If more tools are needed, call them; otherwise answer the user.`});
+     }catch(e){
+       if(e.message.startsWith('USER_DENIED')){
+         working.push({role:'user',content:'The user denied JavaScript execution. Continue without running it.'});
+       }else{
+         working.push({role:'user',content:'TOOL ERROR: '+e.message});
+       }
+     }
+   }
+   log(`agent pass ${pass+1} ${(performance.now()-start).toFixed(0)}ms`);
+ }
+ if(stop)final=final||'Stopped.';
+ if(!final)final='I could not produce a response.';
+ chatMessages.push({role:'assistant',content:final});renderMessage('assistant',markdown(final),true);await saveChat();
+ $('agent').textContent='idle';$('send').disabled=false;busy=false;renderChats();storeInfo();
+}
 
-  <header>
-    <div class="logo">n3xn AI</div>
-    <div class="header-controls">
-      <select id="modelSelect">
-        <option value="">Select model…</option>
-        <optgroup label="Ultra-fast">
-          <option value="SmolLM2-360M-Instruct-q4f16_1-MLC">SmolLM2 360M (~210 MB)</option>
-          <option value="Qwen2.5-0.5B-Instruct-q4f16_1-MLC" selected>Qwen2.5 0.5B (~280 MB)</option>
-        </optgroup>
-        <optgroup label="Better quality (slower)">
-          <option value="Llama-3.2-1B-Instruct-q4f16_1-MLC">Llama 3.2 1B (~710 MB)</option>
-        </optgroup>
-      </select>
-      <button id="loadBtn" class="primary">Load</button>
-      <button id="clearBtn">Clear</button>
-    </div>
-  </header>
-
-  <main>
-    <aside id="sidebar">
-      <div class="sidebar-section">
-        <h3>Status</h3>
-        <div class="status-line"><span>WebLLM</span><span id="webllmStatus">init…</span></div>
-        <div class="status-line"><span>Model</span><span id="modelStatus">None</span></div>
-        <div class="status-line"><span>Engine</span><span id="engineStatus">Idle</span></div>
-        <div class="status-line"><span>Context</span><span id="contextStatus">0/5</span></div>
-      </div>
-
-      <div class="sidebar-section">
-        <h3>System Prompt</h3>
-        <label for="systemPrompt">Short & snappy</label>
-        <textarea id="systemPrompt" class="system-prompt"></textarea>
-      </div>
-
-      <div class="sidebar-section">
-        <h3>Cache</h3>
-        <button id="clearCacheBtn" style="width: 100%; font-size: 0.8rem; padding: 6px 10px;">Clear Cache</button>
-        <div class="perf-info" id="cacheInfo" style="margin-top: 8px;">—</div>
-      </div>
-
-      <div class="sidebar-section">
-        <h3>Perf</h3>
-        <div class="perf-info" id="perfInfo">—</div>
-      </div>
-    </aside>
-
-    <div class="chat-area">
-      <div id="messages"></div>
-      <div class="input-area">
-        <textarea id="userInput" placeholder="Ask…" rows="1"></textarea>
-        <button id="sendBtn" class="primary" disabled>Send</button>
-      </div>
-    </div>
-  </main>
-
-  <script type="module">
-    // ============ Optimizations ============
-    const CONFIG = {
-      MAX_TOKENS: 128,           // Ultra-fast generation
-      BATCH_UPDATE_INTERVAL: 3,  // Update UI every 3 tokens
-      MAX_CONTEXT_MESSAGES: 5,   // Keep only last 5 messages
-      TEMPERATURE: 0.6,          // Slightly lower = faster + more deterministic
-    };
-
-    let engine = null;
-    let isGenerating = false;
-    let webllmReady = false;
-    let CreateMLCEngine = null;
-    let conversationHistory = [];
-    let tokenTimings = [];
-
-    const STORAGE_PROMPT = "n3xn-ai-prompt-v2";
-    const STORAGE_HISTORY = "n3xn-ai-history-v2";
-    const DB_NAME = "n3xn-ai-models";
-
-    const DEFAULT_SYSTEM = "You are n3xn AI. Be brief and helpful. Low-end device, so keep it short.";
-
-    const $ = (id) => document.getElementById(id);
-
-    function addMessage(role, content) {
-      const div = document.createElement("div");
-      div.className = `msg ${role}`;
-      div.textContent = content;
-      $("messages").appendChild(div);
-      // Optimized: use transform instead of scrollTop
-      requestAnimationFrame(() => {
-        $("messages").scrollTop = $("messages").scrollHeight;
-      });
-      return div;
-    }
-
-    function setStatus(id, text, cls = "") {
-      const el = $(id);
-      if (el) { el.textContent = text; el.className = cls; }
-    }
-
-    function showProgress(show, title = "Loading…", text = "", pct = 0) {
-      const overlay = $("progressOverlay");
-      if (show) {
-        overlay.classList.add("visible");
-        $("progressTitle").textContent = title;
-        $("progressText").textContent = text;
-        $("progressBar").style.width = Math.min(100, pct) + "%";
-      } else {
-        overlay.classList.remove("visible");
-      }
-    }
-
-    // ============ IndexedDB Caching ============
-    async function openDB() {
-      return new Promise((resolve, reject) => {
-        const req = indexedDB.open(DB_NAME, 1);
-        req.onerror = () => reject(req.error);
-        req.onsuccess = () => resolve(req.result);
-        req.onupgradeneeded = (e) => {
-          const db = e.target.result;
-          if (!db.objectStoreNames.contains("models")) {
-            db.createObjectStore("models", { keyPath: "id" });
-          }
-        };
-      });
-    }
-
-    async function getModelCache(modelId) {
-      try {
-        const db = await openDB();
-        return new Promise((resolve) => {
-          const tx = db.transaction("models", "readonly");
-          const store = tx.objectStore("models");
-          const req = store.get(modelId);
-          req.onerror = () => resolve(null);
-          req.onsuccess = () => resolve(req.result?.cached || false);
-        });
-      } catch { return false; }
-    }
-
-    async function setModelCache(modelId) {
-      try {
-        const db = await openDB();
-        const tx = db.transaction("models", "readwrite");
-        const store = tx.objectStore("models");
-        store.put({ id: modelId, cached: true, timestamp: Date.now() });
-      } catch {}
-    }
-
-    async function clearCache() {
-      if (!confirm("Clear all cached models? (Will need to re-download on next load)")) return;
-
-      try {
-        const db = await openDB();
-        const tx = db.transaction("models", "readwrite");
-        const store = tx.objectStore("models");
-        store.clear();
-
-        $("cacheInfo").textContent = "Cache cleared. Freed memory.";
-        addMessage("system", "Model cache cleared.");
-        setTimeout(() => { $("cacheInfo").textContent = "—"; }, 2000);
-      } catch (err) {
-        addMessage("system", "Clear failed: " + err.message);
-      }
-    }
-
-    // ============ WebLLM Loading ============
-    function buildCandidates() {
-      const base = location.origin;
-      return [
-        base + "/__cdn__/jsdelivr/npm/@mlc-ai/web-llm/+esm",
-        base + "/__cdn__/jsdelivr/npm/@mlc-ai/web-llm@0.2.85/+esm",
-        "https://cdn.jsdelivr.net/npm/@mlc-ai/web-llm/+esm",
-        "https://esm.run/@mlc-ai/web-llm",
-      ];
-    }
-
-    async function tryImport(url) {
-      const mod = await import(/* @vite-ignore */ url);
-      let factory = mod.CreateMLCEngine;
-      if (typeof factory !== "function" && mod.default) {
-        factory = mod.default.CreateMLCEngine || mod.default;
-      }
-      if (typeof factory !== "function") throw new Error("CreateMLCEngine not found");
-      return factory;
-    }
-
-    async function loadWebLLM() {
-      setStatus("webllmStatus", "Loading…", "status-warn");
-      addMessage("system", "Initializing WebLLM…");
-
-      for (const url of buildCandidates()) {
-        try {
-          console.log("[n3xn] Trying CDN:", url);
-          CreateMLCEngine = await tryImport(url);
-          webllmReady = true;
-          setStatus("webllmStatus", "Ready", "status-ok");
-          addMessage("system", "WebLLM ready. Select model.");
-          return true;
-        } catch (err) {
-          console.log("[n3xn] Failed:", url, err.message);
-        }
-      }
-
-      setStatus("webllmStatus", "Failed", "status-bad");
-      addMessage("system", "WebLLM load failed.");
-      return false;
-    }
-
-    async function loadModel() {
-      if (!webllmReady || !CreateMLCEngine) return;
-
-      const modelId = $("modelSelect").value;
-      if (!modelId) { alert("Select a model"); return; }
-      if (isGenerating) return;
-
-      $("loadBtn").disabled = true;
-      $("sendBtn").disabled = true;
-      setStatus("engineStatus", "Loading…", "status-warn");
-      showProgress(true, "Loading model…", "Please wait…", 0);
-
-      try {
-        const cached = await getModelCache(modelId);
-        if (cached) addMessage("system", "Loading from cache…");
-
-        engine = await CreateMLCEngine(modelId, {
-          initProgressCallback: (r) => {
-            showProgress(true, "Loading…", r.text || "", (r.progress || 0) * 100);
-          }
-        });
-
-        await setModelCache(modelId);
-        const short = modelId.split("-")[0];
-        setStatus("modelStatus", short, "status-ok");
-        setStatus("engineStatus", "Ready", "status-ok");
-        $("sendBtn").disabled = false;
-        addMessage("system", "Ready.");
-      } catch (err) {
-        setStatus("engineStatus", "Failed", "status-bad");
-        addMessage("system", "Load failed: " + err.message);
-        console.error(err);
-      } finally {
-        showProgress(false);
-        $("loadBtn").disabled = false;
-      }
-    }
-
-    // ============ Chat (Optimized) ============
-    async function sendMessage() {
-      if (!engine || isGenerating) return;
-
-      const input = $("userInput");
-      const text = input.value.trim();
-      if (!text) return;
-
-      input.value = "";
-      addMessage("user", text);
-      conversationHistory.push({ role: "user", content: text });
-      saveHistory();
-
-      isGenerating = true;
-      $("sendBtn").disabled = true;
-      setStatus("engineStatus", "Thinking…", "status-warn");
-
-      const replyEl = addMessage("assistant", "…");
-      let full = "";
-      let tokenCount = 0;
-      const startTime = performance.now();
-
-      try {
-        const systemPrompt = ($("systemPrompt").value || DEFAULT_SYSTEM).trim();
-
-        // Trim context to last N messages
-        const contextMessages = conversationHistory.slice(-CONFIG.MAX_CONTEXT_MESSAGES * 2);
-
-        const messages = [
-          { role: "system", content: systemPrompt },
-          ...contextMessages
-        ];
-
-        const completion = await engine.chat.completions.create({
-          messages,
-          stream: true,
-          temperature: CONFIG.TEMPERATURE,
-          max_tokens: CONFIG.MAX_TOKENS,
-          top_p: 0.9,
-        });
-
-        // Batched UI updates for performance
-        for await (const chunk of completion) {
-          const delta = chunk.choices[0]?.delta?.content || "";
-          full += delta;
-          tokenCount++;
-
-          // Only update UI every N tokens
-          if (tokenCount % CONFIG.BATCH_UPDATE_INTERVAL === 0) {
-            replyEl.textContent = full || "…";
-            requestAnimationFrame(() => {
-              $("messages").scrollTop = $("messages").scrollHeight;
-            });
-          }
-        }
-
-        replyEl.textContent = full || "(no response)";
-        conversationHistory.push({ role: "assistant", content: full });
-        saveHistory();
-
-        // Performance metrics
-        const elapsed = performance.now() - startTime;
-        const tokensPerSec = (tokenCount / elapsed * 1000).toFixed(1);
-        tokenTimings.push(tokensPerSec);
-        if (tokenTimings.length > 10) tokenTimings.shift();
-
-        const avgTPS = (tokenTimings.reduce((a, b) => parseFloat(a) + parseFloat(b), 0) / tokenTimings.length).toFixed(1);
-        $("perfInfo").textContent = `${avgTPS} tok/s\n${tokenCount} tokens\n${(elapsed / 1000).toFixed(1)}s`;
-
-        setStatus("contextStatus", `${conversationHistory.length}/10`);
-      } catch (err) {
-        replyEl.textContent = "Error: " + err.message;
-        console.error(err);
-      } finally {
-        isGenerating = false;
-        $("sendBtn").disabled = false;
-        setStatus("engineStatus", "Ready", "status-ok");
-      }
-    }
-
-    // ============ Storage ============
-    function saveHistory() {
-      try {
-        // Keep only last 10 for memory
-        const trimmed = conversationHistory.slice(-10);
-        localStorage.setItem(STORAGE_HISTORY, JSON.stringify(trimmed));
-      } catch {}
-    }
-
-    function loadHistory() {
-      try {
-        const saved = localStorage.getItem(STORAGE_HISTORY);
-        return saved ? JSON.parse(saved) : [];
-      } catch { return []; }
-    }
-
-    function saveSystemPrompt(text) {
-      try {
-        localStorage.setItem(STORAGE_PROMPT, text);
-      } catch {}
-    }
-
-    function loadSystemPrompt() {
-      try {
-        return localStorage.getItem(STORAGE_PROMPT) || DEFAULT_SYSTEM;
-      } catch { return DEFAULT_SYSTEM; }
-    }
-
-    // ============ Events ============
-    $("loadBtn").addEventListener("click", loadModel);
-    $("clearBtn").addEventListener("click", () => {
-      $("messages").innerHTML = "";
-      conversationHistory = [];
-      saveHistory();
-      addMessage("system", "Chat cleared.");
-    });
-    $("clearCacheBtn").addEventListener("click", clearCache);
-    $("sendBtn").addEventListener("click", sendMessage);
-    $("userInput").addEventListener("keydown", (e) => {
-      if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
-    });
-    $("systemPrompt").addEventListener("input", () => {
-      saveSystemPrompt($("systemPrompt").value);
-    });
-
-    // ============ Init ============
-    (async function init() {
-      $("systemPrompt").value = loadSystemPrompt();
-      conversationHistory = loadHistory();
-
-      // Check cache status
-      try {
-        const db = await openDB();
-        const tx = db.transaction("models", "readonly");
-        const store = tx.objectStore("models");
-        const req = store.getAll();
-        req.onsuccess = () => {
-          $("cacheInfo").textContent = req.result.length > 0 ? "Cached: " + req.result.map(r => r.id).join(", ") : "No cache";
-        };
-      } catch {}
-
-      addMessage("system", "n3xn AI V1.1 (optimized)");
-      await loadWebLLM();
-    })();
-  </script>
+async function command(line){const [cmd,...rest]=line.trim().split(/\s+/),arg=rest.join(' ');if(!cmd)return;log('> '+line);try{if(cmd==='/help')return log('/memory list|search <q>|save <text>\n/chats list|search <q>|show <id>\n/files list|read <id>\n/js <expression or code>\n/reflect — show agent state\n/export');if(cmd==='/memory'){if(rest[0]==='list')return log(JSON.stringify(await all(STORE.mem),null,2));if(rest[0]==='search')return log(JSON.stringify(await searchMem(rest.slice(1).join(' ')),null,2));if(rest[0]==='save')return log(JSON.stringify(await remember(rest.slice(1).join(' '))));}if(cmd==='/chats'){if(rest[0]==='list')return log(JSON.stringify(await TOOLS['chats.list'](),null,2));if(rest[0]==='search')return log(JSON.stringify(await searchChats(rest.slice(1).join(' ')),null,2));if(rest[0]==='show')return log(JSON.stringify(await get(STORE.chats,rest[1]),null,2));}if(cmd==='/files'){if(rest[0]==='list')return log(JSON.stringify(await listFiles(),null,2));if(rest[0]==='read')return log(JSON.stringify(await fileRead(rest[1]),null,2));}if(cmd==='/js'){return log(JSON.stringify(await runSandboxJS(arg)));}if(cmd==='/reflect'){return log(JSON.stringify({busy,model:$('model').value,device:'WASM/CPU',webgpu:'disabled by default',adaptive:{lag:Governor.lag,level:Governor.level,plan:Governor.plan()},memories:(await all(STORE.mem)).length,chats:(await all(STORE.chats)).length,files:(await all(STORE.files)).length},null,2));}if(cmd==='/export')return exportBackup();log('Unknown command. /help') }catch(e){log('ERROR: '+e.message)}}
+async function exportBackup(){const data={format:'n3xn-ai-backup',version:2,exported:Date.now(),settings:await get(STORE.meta,'settings'),memories:await all(STORE.mem),chats:await all(STORE.chats),files:(await all(STORE.files)).map(f=>({id:f.id,name:f.name,size:f.size,type:f.type,modified:f.modified}))};const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='n3xn-ai-backup.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
+$('load').onclick=loadRuntime;$('unload').onclick=unload;$('send').onclick=()=>agentTurn($('input').value.trim()).then(()=>{$('input').value=''});$('stop').onclick=()=>{stop=true};$('newChat').onclick=newChat;$('settings').onclick=()=>log('Tools are local: memory, conversations, files, sandbox JS.');$('consoleIn').onkeydown=e=>{if(e.key==='Enter'){command(e.target.value);e.target.value=''}};$('upload').onclick=()=>$('files').click();$('files').onchange=async e=>{for(const f of e.target.files){await put(STORE.files,{id:uid('file'),name:f.name,size:f.size,type:f.type,modified:f.lastModified,blob:f})}await renderFiles();await storeInfo();log(`Stored ${e.target.files.length} file(s) locally.`)};$('addMem').onclick=async()=>{const x=prompt('Memory to save:');if(x)await remember(x)};$('export').onclick=exportBackup;$('clearStore').onclick=async()=>{if(!confirm('Delete all local n3xn AI memories, chats and uploaded files?'))return;for(const s of Object.values(STORE)){for(const x of await all(s))await del(s,x.id)}await newChat();await renderMemories();await renderFiles();await renderChats();await storeInfo()};$('modalClose').onclick=()=>$('modal').classList.remove('show');$('input').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();$('send').click()}});
+['system','model','rate','cool','max','think','autoTools','askJS'].forEach(id=>$(id).addEventListener('change',saveMeta));
+async function boot(){db=await openDB();await loadMeta();await renderMemories();await renderFiles();await renderChats();await storeInfo();const xs=await all(STORE.chats);if(xs.length){currentChat=xs.sort((a,b)=>b.updated-a.updated)[0];chatMessages=currentChat.messages||[];renderHistory()}else await newChat();renderMessage('system','n3xn AI V3 ready. CPU/WASM is the default runtime; WebGPU is not initialized. Adaptive lag protection is active. Upload files, save memories, and use the AI console to inspect local data.');log('Ready. No backend. No WebGPU initialization. Adaptive governor will slow workloads when the device starts lagging.');}
+Governor.init();
+$('rate').addEventListener('input',()=>Governor.setBase());$('cool').addEventListener('input',()=>Governor.setBase());
+boot().catch(e=>log('BOOT ERROR: '+e.message));
+// lightweight particle field
+const c=$('fx'),ctx=c.getContext('2d');let W=0,H=0,pts=[];function resize(){W=c.width=innerWidth*devicePixelRatio;H=c.height=innerHeight*devicePixelRatio;ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);pts=Array.from({length:Math.min(60,Math.floor(innerWidth/22))},()=>({x:Math.random()*innerWidth,y:Math.random()*innerHeight,vx:(Math.random()-.5)*.18,vy:(Math.random()-.5)*.18,r:Math.random()*1.5+.3}))}function draw(){ctx.clearRect(0,0,innerWidth,innerHeight);for(const p of pts){p.x+=p.vx;p.y+=p.vy;if(p.x<0||p.x>innerWidth)p.vx*=-1;if(p.y<0||p.y>innerHeight)p.vy*=-1;ctx.fillStyle='rgba(110,168,255,.38)';ctx.fillRect(p.x,p.y,p.r,p.r)}requestAnimationFrame(draw)}addEventListener('resize',resize);resize();draw();
+</script>
 </body>
 </html>
