@@ -1,0 +1,17 @@
+{
+  "format": "nrxn-air-model-v1",
+  "name": "NRXN AIR Tiny Demo Brain",
+  "type": "char-bigram",
+  "version": 1,
+  "bytes": 32779,
+  "sha256": "989e71ebccabfd9124f75f478eed5c4cdbdbc97766c957bf9209cc68207a0b8e",
+  "runtime": "AIR v0.3",
+  "note": "Tiny proof-of-runtime model; not a production language model.",
+  "parts": [
+    {
+      "file": "demo.nrxm",
+      "bytes": 32779,
+      "sha256": "989e71ebccabfd9124f75f478eed5c4cdbdbc97766c957bf9209cc68207a0b8e"
+    }
+  ]
+}
