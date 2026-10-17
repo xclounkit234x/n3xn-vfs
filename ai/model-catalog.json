@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "note": "Curated starter catalog. Availability, licenses, quantizations and model quality can change; verify upstream model cards before redistribution.",
+  "lists": [
+    {"id":1,"name":"Smol & tiny","models":[
+      {"name":"SmolLM2 135M Instruct","params":"135M","repo":"HuggingFaceTB/SmolLM2-135M-Instruct"},
+      {"name":"SmolLM2 360M Instruct","params":"360M","repo":"HuggingFaceTB/SmolLM2-360M-Instruct"},
+      {"name":"Qwen2.5 0.5B Instruct","params":"0.5B","repo":"Qwen/Qwen2.5-0.5B-Instruct"},
+      {"name":"SmolLM2 360M Instruct GGUF","params":"360M","repo":"HuggingFaceTB/SmolLM2-360M-Instruct-GGUF"}
+    ]},
+    {"id":2,"name":"Small","models":[
+      {"name":"SmolLM2 1.7B Instruct","params":"1.7B","repo":"HuggingFaceTB/SmolLM2-1.7B-Instruct"},
+      {"name":"Qwen3 1.7B","params":"1.7B","repo":"Qwen/Qwen3-1.7B"},
+      {"name":"Qwen2.5 Coder 1.5B Instruct","params":"1.5B","repo":"Qwen/Qwen2.5-Coder-1.5B-Instruct"},
+      {"name":"Phi-3.5 Mini Instruct","params":"3.8B","repo":"microsoft/Phi-3.5-mini-instruct"}
+    ]},
+    {"id":3,"name":"Mid-size","models":[
+      {"name":"SmolLM3 3B","params":"3B","repo":"HuggingFaceTB/SmolLM3-3B"},
+      {"name":"Qwen3 4B","params":"4B","repo":"Qwen/Qwen3-4B"},
+      {"name":"Gemma 3 4B IT","params":"4B","repo":"google/gemma-3-4b-it"},
+      {"name":"Phi-4 Mini Instruct","params":"3.8B","repo":"microsoft/Phi-4-mini-instruct"}
+    ]},
+    {"id":4,"name":"Qwen & above","models":[
+      {"name":"Qwen3.5 4B","params":"4B","repo":"Qwen/Qwen3.5-4B"},
+      {"name":"Qwen3.5 9B","params":"9B","repo":"Qwen/Qwen3.5-9B"},
+      {"name":"Gemma 3 12B IT","params":"12B","repo":"google/gemma-3-12b-it"},
+      {"name":"Gemma 3 27B IT","params":"27B","repo":"google/gemma-3-27b-it"}
+    ]}
+  ]
+}
