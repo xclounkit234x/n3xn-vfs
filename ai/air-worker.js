@@ -1,38 +1,49 @@
-let wasm = null;
-let HEAP = null;
+let instance=null, memory=null;
 
-function post(type, data={}) { self.postMessage({type, ...data}); }
+async function boot(){
+  const url=new URL("./air.wasm",import.meta.url);
+  const r=await fetch(url);
+  if(!r.ok) throw new Error(`WASM fetch failed: ${r.status}`);
+  const bytes=await r.arrayBuffer();
+  const mod=await WebAssembly.instantiate(bytes,{});
+  instance=mod.instance;
+  memory=instance.exports.memory;
+  if(!instance.exports.heap_alloc || !memory) throw new Error("AIR WASM exports are incomplete");
+  return {
+    version:instance.exports.version(),
+    binaryBytes:bytes.byteLength,
+    memoryBytes:memory.buffer.byteLength
+  };
+}
 
-self.onmessage = async (ev) => {
-  const m = ev.data || {};
-  try {
-    if (m.type === 'load') {
-      const res = await fetch(m.wasm || './air.wasm');
-      if (!res.ok) throw new Error(`WASM HTTP ${res.status}`);
-      const bytes = await res.arrayBuffer();
-      const result = await WebAssembly.instantiate(bytes, {});
-      wasm = result.instance;
-      HEAP = new Uint8Array(wasm.exports.memory.buffer);
-      post('ready', {version: wasm.exports.air_version(), wasmBytes: bytes.byteLength, memoryBytes: HEAP.byteLength});
-      return;
-    }
-    if (m.type === 'selftest') {
-      if (!wasm) throw new Error('AIR is not loaded');
-      const requested = Math.max(64 * 1024, Math.min(64 * 1024 * 1024, m.heapBytes || 1024 * 1024));
-      const capacity = wasm.exports.air_heap_init(requested);
-      const p = wasm.exports.air_alloc(Math.min(4096, capacity), 16);
-      if (!p) throw new Error('AIR allocator failed');
-      const text = new TextEncoder().encode(m.text || 'NRXN AIR');
-      HEAP.set(text, p);
-      const checksum = wasm.exports.air_checksum(p, text.length);
-      post('selftest', {capacity, used: wasm.exports.air_heap_used(), checksum, text: m.text || 'NRXN AIR'});
-      return;
-    }
-    if (m.type === 'stop') {
-      wasm = null; HEAP = null; post('stopped');
-      return;
-    }
-  } catch (error) {
-    post('error', {message: error?.stack || String(error)});
+function capacity(){ return memory.buffer.byteLength; }
+
+async function selfTest(bytes){
+  const requested=Math.max(16,bytes|0);
+  const before=capacity();
+  let ptr=instance.exports.heap_alloc(requested);
+
+  // The first allocator version did not grow WASM memory. AIR v0.2 does.
+  // Grow explicitly from the worker when the requested allocation exceeds capacity.
+  if(!ptr || ptr+requested>capacity()){
+    const needed=ptr+requested;
+    const pages=Math.ceil((needed-capacity())/65536);
+    if(pages>0 && memory.grow(pages)<0) throw new Error("WASM memory.grow failed");
+    ptr=instance.exports.heap_alloc(requested);
   }
+  if(!ptr) throw new Error(`AIR allocator failed: requested ${requested} bytes, capacity ${capacity()} bytes`);
+
+  return {ok:true,pointer:ptr,requested,capacityBefore:before,capacityAfter:capacity()};
+}
+
+self.onmessage=async e=>{
+  const {id,op}=e.data||{};
+  try{
+    let result;
+    if(op==="boot") result=await boot();
+    else if(op==="self-test") result=await selfTest(e.data.bytes);
+    else if(op==="status") result={version:instance?.exports.version?.()??null,memoryBytes:memory?.buffer.byteLength??0};
+    else throw new Error(`Unknown AIR operation: ${op}`);
+    self.postMessage({id,ok:true,result});
+  }catch(err){ self.postMessage({id,ok:false,error:String(err?.message||err)}); }
 };

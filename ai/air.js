@@ -1,35 +1,26 @@
-export class NRXNAIR {
-  constructor(root = new URL('./', document.baseURI)) {
-    this.root = new URL(root);
+export class AIRRuntime {
+  constructor(base = new URL(".", import.meta.url)) {
+    this.base = new URL(base);
     this.worker = null;
-    this.ready = false;
+    this.seq = 0;
+    this.pending = new Map();
   }
-  async load() {
-    if (this.worker) return;
-    this.worker = new Worker(new URL('air-worker.js', this.root), {type:'module'});
-    const worker = this.worker;
-    await new Promise((resolve, reject) => {
-      const on = (e) => {
-        if (e.data?.type === 'ready') { this.ready = true; this.info = e.data; cleanup(); resolve(e.data); }
-        if (e.data?.type === 'error') { cleanup(); reject(new Error(e.data.message)); }
-      };
-      const cleanup = () => worker.removeEventListener('message', on);
-      worker.addEventListener('message', on);
-      worker.postMessage({type:'load', wasm:new URL('air.wasm', this.root).href});
-    });
-    return this.info;
+  start() {
+    this.worker = new Worker(new URL("./air-worker.js", this.base), {type:"module"});
+    this.worker.onmessage = e => {
+      const m=e.data||{}, p=this.pending.get(m.id);
+      if(!p) return;
+      this.pending.delete(m.id);
+      m.ok ? p.resolve(m.result) : p.reject(new Error(m.error||"AIR worker error"));
+    };
+    return this.call("boot").then(()=>this);
   }
-  selfTest(text='NRXN AIR', heapBytes=4*1024*1024) {
-    return new Promise((resolve,reject) => {
-      const w=this.worker;
-      const on=e=>{
-        if(e.data?.type==='selftest'){cleanup();resolve(e.data)}
-        if(e.data?.type==='error'){cleanup();reject(new Error(e.data.message))}
-      };
-      const cleanup=()=>w.removeEventListener('message',on);
-      w.addEventListener('message',on);
-      w.postMessage({type:'selftest',text,heapBytes});
+  call(op,args={}) {
+    const id=String(++this.seq);
+    return new Promise((resolve,reject)=>{
+      this.pending.set(id,{resolve,reject});
+      this.worker.postMessage({id,op,...args});
     });
   }
-  stop(){ if(this.worker){this.worker.postMessage({type:'stop'});this.worker.terminate();this.worker=null;this.ready=false;} }
+  selfTest(bytes=4*1024*1024){ return this.call("self-test",{bytes}); }
 }
