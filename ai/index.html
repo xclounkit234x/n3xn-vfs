@@ -1,166 +1,871 @@
 
-/**
- * NRXN AIR · Advanced GX Particle Field
- * Lightweight canvas particle system with connections, mouse repulsion,
- * accent-color sync, and density scaling.
- */
-(function () {
-  const canvas = document.createElement("canvas");
-  canvas.id = "gx-particles";
-  canvas.setAttribute("aria-hidden", "true");
-  document.body.prepend(canvas);
+<!DOCTYPE html>
+<html lang="en" data-theme="seraph">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="color-scheme" content="dark" />
+  <title>NRXN AIR · Local Intelligence</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop stop-color='%23a78bfa'/%3E%3Cstop offset='1' stop-color='%236366f1'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='8' fill='url(%23g)'/%3E%3Ctext x='16' y='22' text-anchor='middle' font-size='14' font-family='system-ui' font-weight='800' fill='%230b0b14'%3EA%3C/text%3E%3C/svg%3E" />
+  <style>
+:root {
+  --bg-deep: #0b0b14;
+  --bg-mid: #12121f;
+  --glass: rgba(255, 255, 255, 0.055);
+  --glass-strong: rgba(255, 255, 255, 0.1);
+  --glass-border: rgba(255, 255, 255, 0.12);
+  --text: #f2f2f7;
+  --text-dim: rgba(242, 242, 247, 0.62);
+  --accent: #a78bfa;
+  --accent-2: #c4b5fd;
+  --accent-glow: rgba(167, 139, 250, 0.35);
+  --danger: #f87171;
+  --ok: #34d399;
+  --radius: 16px;
+  --radius-sm: 11px;
+  --blur: 20px;
+  --shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+  --sidebar-w: 300px;
+  --font: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+  --font-scale: 1;
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  height: 100%;
+  font-family: var(--font);
+  font-size: calc(15px * var(--font-scale));
+  color: var(--text);
+  background: radial-gradient(ellipse 120% 80% at 70% -20%, color-mix(in srgb, var(--accent) 18%, transparent), transparent 50%),
+              radial-gradient(ellipse 80% 60% at 10% 100%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 45%),
+              var(--bg-deep);
+  overflow: hidden;
+}
+body.no-particles #gx-particles { opacity: 0 !important; }
+#gx-particles {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 0 !important;
+  pointer-events: none !important;
+  transition: opacity 0.4s var(--ease);
+}
+.app {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: var(--sidebar-w) 1fr;
+  height: 100vh;
+  height: 100dvh;
+  transition: grid-template-columns 0.35s var(--ease);
+}
+body.sidebar-collapsed .app { grid-template-columns: 0 1fr; }
 
-  const ctx = canvas.getContext("2d", { alpha: true });
-  let w = 0, h = 0, dpr = 1;
-  let particles = [];
-  let mouse = { x: -9999, y: -9999, active: false };
-  let accent = "#a78bfa";
-  let accentRgb = [167, 139, 250];
-  let raf = 0;
-  let density = 1;
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  background: rgba(11, 11, 20, 0.55);
+  backdrop-filter: blur(var(--blur));
+  -webkit-backdrop-filter: blur(var(--blur));
+  border-right: 1px solid var(--glass-border);
+  overflow: hidden;
+  transition: opacity 0.25s, transform 0.35s var(--ease);
+}
+body.sidebar-collapsed .sidebar {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-12px);
+}
+.side-head {
+  padding: 14px 14px 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 1px solid var(--glass-border);
+}
+.logo-mark {
+  width: 36px; height: 36px;
+  border-radius: 11px;
+  background: linear-gradient(135deg, var(--accent), #6366f1);
+  box-shadow: 0 0 24px var(--accent-glow);
+  display: grid; place-items: center;
+  font-weight: 800; font-size: 0.85rem; color: #0b0b14;
+  flex-shrink: 0;
+  animation: logoPulse 4s ease-in-out infinite;
+}
+@keyframes logoPulse {
+  0%, 100% { box-shadow: 0 0 20px var(--accent-glow); }
+  50% { box-shadow: 0 0 32px var(--accent-glow), 0 0 48px color-mix(in srgb, var(--accent) 25%, transparent); }
+}
+.logo-text { line-height: 1.15; }
+.logo-text strong { display: block; font-size: 0.95rem; letter-spacing: 0.04em; }
+.logo-text span { font-size: 0.7rem; color: var(--text-dim); letter-spacing: 0.06em; }
 
-  function parseAccent(css) {
-    const el = document.createElement("div");
-    el.style.color = css;
-    document.body.appendChild(el);
-    const computed = getComputedStyle(el).color;
-    document.body.removeChild(el);
-    const m = computed.match(/(\d+),\s*(\d+),\s*(\d+)/);
-    if (m) return [+m[1], +m[2], +m[3]];
-    return [167, 139, 250];
+.account-bar {
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid var(--glass-border);
+}
+.account-bar .avatar, .msg-avatar, #currentAccountAvatar {
+  width: 32px; height: 32px; border-radius: 10px;
+  display: grid; place-items: center;
+  font-weight: 700; font-size: 0.8rem; color: #0b0b14;
+  flex-shrink: 0;
+}
+.account-info { flex: 1; min-width: 0; }
+.account-info .label { font-size: 0.65rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.08em; }
+.account-info .name { font-weight: 650; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.account-list {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  padding: 8px 12px 4px;
+}
+.account-pill {
+  display: flex; align-items: center; gap: 6px;
+  padding: 4px 10px 4px 4px;
+  border-radius: 999px;
+  border: 1px solid var(--glass-border);
+  background: var(--glass);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 0.78rem;
+  transition: border-color 0.2s, background 0.2s, transform 0.15s;
+}
+.account-pill:hover { border-color: var(--accent); transform: translateY(-1px); }
+.account-pill.active {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  box-shadow: 0 0 16px var(--accent-glow);
+}
+.account-pill .avatar { width: 22px; height: 22px; border-radius: 50%; font-size: 0.65rem; }
+
+.side-tabs {
+  display: flex; gap: 4px; padding: 8px 12px;
+}
+.side-tab {
+  flex: 1;
+  padding: 8px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 0.78rem;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.side-tab:hover { color: var(--text); background: var(--glass); }
+.side-tab.active {
+  color: var(--accent-2);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+}
+
+.side-actions {
+  display: flex; gap: 6px; padding: 0 12px 10px;
+}
+.side-actions button {
+  flex: 1;
+  padding: 9px 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--glass-border);
+  background: var(--glass);
+  color: var(--text);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s var(--ease);
+}
+.side-actions button:hover {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  box-shadow: 0 4px 20px var(--accent-glow);
+  transform: translateY(-1px);
+}
+.side-actions button.primary {
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+  border-color: var(--accent);
+  color: var(--accent-2);
+}
+
+.side-panel {
+  display: none;
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 10px 16px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--glass-border) transparent;
+}
+.side-panel.active { display: block; }
+
+.list-section-label {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-dim);
+  margin: 12px 6px 6px;
+}
+.chat-item {
+  width: 100%;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  margin-bottom: 4px;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.chat-item:hover { background: var(--glass); border-color: var(--glass-border); }
+.chat-item.active {
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 35%, transparent);
+  box-shadow: 0 0 20px var(--accent-glow);
+}
+.chat-title { font-size: 0.88rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chat-meta { font-size: 0.7rem; color: var(--text-dim); }
+.chat-item .badge {
+  align-self: flex-start;
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--accent) 25%, transparent);
+  color: var(--accent-2);
+  margin-top: 2px;
+}
+.empty-hint { padding: 16px 8px; color: var(--text-dim); font-size: 0.85rem; text-align: center; }
+
+.memory-card {
+  padding: 12px;
+  margin-bottom: 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--glass-border);
+  background: var(--glass);
+  transition: border-color 0.2s, transform 0.15s;
+}
+.memory-card:hover { border-color: var(--accent); transform: translateY(-1px); }
+.memory-title { font-weight: 650; font-size: 0.88rem; margin-bottom: 4px; }
+.memory-body { font-size: 0.8rem; color: var(--text-dim); line-height: 1.4; white-space: pre-wrap; }
+.memory-actions { display: flex; gap: 6px; margin-top: 8px; }
+
+.ghost-btn {
+  background: transparent;
+  border: 1px solid var(--glass-border);
+  color: var(--text-dim);
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 0.72rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.ghost-btn:hover { color: var(--text); border-color: var(--accent); }
+.ghost-btn.danger:hover { color: var(--danger); border-color: var(--danger); }
+
+.side-foot {
+  padding: 10px 12px;
+  border-top: 1px solid var(--glass-border);
+  display: flex; gap: 6px;
+}
+.side-foot button {
+  flex: 1;
+  padding: 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--glass-border);
+  background: var(--glass);
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all 0.2s;
+}
+.side-foot button:hover { color: var(--text); border-color: var(--accent); }
+
+.main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: transparent;
+}
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 18px;
+  background: rgba(11, 11, 20, 0.4);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--glass-border);
+}
+.icon-btn {
+  width: 38px; height: 38px;
+  border-radius: 12px;
+  border: 1px solid var(--glass-border);
+  background: var(--glass);
+  color: var(--text);
+  cursor: pointer;
+  display: grid; place-items: center;
+  font-size: 1rem;
+  transition: all 0.2s var(--ease);
+}
+.icon-btn:hover {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px var(--accent-glow);
+}
+.topbar-title { flex: 1; min-width: 0; }
+.topbar-title h1 {
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.topbar-title p { font-size: 0.72rem; color: var(--text-dim); margin-top: 1px; }
+.status-pills {
+  display: flex; flex-wrap: wrap; gap: 8px;
+  font-size: 0.72rem;
+}
+.status-pill {
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--glass-border);
+  background: var(--glass);
+  color: var(--text-dim);
+  display: flex; align-items: center; gap: 6px;
+  white-space: nowrap;
+}
+.pulse-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--text-dim);
+  animation: pulse 1.4s ease-in-out infinite;
+}
+.pulse-dot.ok { background: var(--ok); box-shadow: 0 0 8px var(--ok); }
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.85); }
+}
+
+.messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 18px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  scroll-behavior: smooth;
+  scrollbar-width: thin;
+  scrollbar-color: var(--glass-border) transparent;
+}
+.msg {
+  display: flex;
+  gap: 12px;
+  max-width: min(780px, 100%);
+  animation: msgIn 0.35s var(--ease) both;
+}
+@keyframes msgIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+.msg.user { align-self: flex-end; flex-direction: row-reverse; }
+.msg.assistant { align-self: flex-start; }
+.msg.system { align-self: center; opacity: 0.85; }
+.msg-avatar {
+  background: linear-gradient(135deg, var(--accent), #6366f1);
+  color: #0b0b14;
+  box-shadow: 0 0 14px var(--accent-glow);
+}
+.msg.user .msg-avatar {
+  background: color-mix(in srgb, var(--accent) 40%, #1a1a2e);
+  color: var(--text);
+  box-shadow: none;
+}
+.msg.system .msg-avatar { background: var(--glass-strong); color: var(--text-dim); box-shadow: none; }
+.msg-body {
+  flex: 1;
+  min-width: 0;
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  border: 1px solid var(--glass-border);
+  background: var(--glass);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: var(--shadow);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.msg.user .msg-body {
+  background: color-mix(in srgb, var(--accent) 12%, rgba(0,0,0,0.25));
+  border-color: color-mix(in srgb, var(--accent) 30%, transparent);
+}
+.msg.assistant .msg-body:hover {
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  box-shadow: 0 8px 28px var(--accent-glow);
+}
+.msg-role {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--accent-2);
+  margin-bottom: 6px;
+  font-weight: 700;
+}
+.msg.user .msg-role { color: var(--text-dim); }
+.msg-content {
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 0.95rem;
+}
+.msg-actions {
+  display: flex; gap: 4px;
+  margin-top: 8px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.msg-body:hover .msg-actions { opacity: 1; }
+.msg-actions .icon-btn {
+  width: 28px; height: 28px;
+  font-size: 0.8rem;
+  border-radius: 8px;
+}
+
+.typing {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 18px;
+  color: var(--text-dim);
+  font-size: 0.85rem;
+}
+.typing-dots span {
+  display: inline-block;
+  width: 6px; height: 6px;
+  margin: 0 2px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: bounce 1.2s infinite ease-in-out;
+}
+.typing-dots span:nth-child(2) { animation-delay: 0.15s; }
+.typing-dots span:nth-child(3) { animation-delay: 0.3s; }
+@keyframes bounce {
+  0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
+  40% { transform: translateY(-5px); opacity: 1; }
+}
+
+.composer-wrap { padding: 12px 18px 18px; }
+.composer {
+  max-width: 780px;
+  margin: 0 auto;
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  border: 1px solid var(--glass-border);
+  background: rgba(11, 11, 20, 0.55);
+  backdrop-filter: blur(var(--blur));
+  -webkit-backdrop-filter: blur(var(--blur));
+  box-shadow: 0 8px 32px rgba(0,0,0,0.35), 0 0 0 1px color-mix(in srgb, var(--accent) 8%, transparent);
+  transition: border-color 0.25s, box-shadow 0.25s;
+}
+.composer:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 8px 36px var(--accent-glow), 0 0 0 1px var(--accent);
+}
+.composer textarea {
+  flex: 1;
+  min-height: 44px;
+  max-height: 160px;
+  resize: none;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  line-height: 1.45;
+  padding: 8px 4px;
+}
+.composer textarea::placeholder { color: var(--text-dim); }
+.composer-btns { display: flex; gap: 6px; align-items: center; }
+.composer .send-btn, .composer .stop-btn {
+  height: 40px;
+  padding: 0 16px;
+  border-radius: 12px;
+  border: 1px solid var(--accent);
+  background: color-mix(in srgb, var(--accent) 28%, transparent);
+  color: var(--accent-2);
+  font-weight: 700;
+  font-size: 0.85rem;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: all 0.2s var(--ease);
+}
+.composer .send-btn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 45%, transparent);
+  box-shadow: 0 4px 20px var(--accent-glow);
+  transform: translateY(-1px);
+}
+.composer .send-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.composer .stop-btn {
+  border-color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 20%, transparent);
+  color: #fecaca;
+}
+.hint-row {
+  max-width: 780px;
+  margin: 8px auto 0;
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  padding: 0 4px;
+}
+
+.settings-backdrop {
+  position: fixed; inset: 0; z-index: 80;
+  background: rgba(0,0,0,0.5);
+  backdrop-filter: blur(6px);
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.25s;
+}
+.settings-panel {
+  position: fixed;
+  top: 0; right: 0; bottom: 0;
+  width: min(400px, 100%);
+  z-index: 90;
+  background: rgba(14, 14, 24, 0.92);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-left: 1px solid var(--glass-border);
+  box-shadow: -20px 0 60px rgba(0,0,0,0.45);
+  transform: translateX(105%);
+  transition: transform 0.35s var(--ease);
+  display: flex; flex-direction: column;
+  overflow: hidden;
+}
+.settings-panel.open, .settings-backdrop.open { pointer-events: auto; }
+.settings-panel.open { transform: none; }
+.settings-backdrop.open { opacity: 1; }
+.settings-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--glass-border);
+}
+.settings-head h2 {
+  font-size: 1rem;
+  letter-spacing: 0.08em;
+  color: var(--accent-2);
+}
+.settings-body {
+  flex: 1; overflow-y: auto;
+  padding: 16px 18px 32px;
+}
+.settings-body label {
+  display: block;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+  margin: 14px 0 6px;
+}
+.settings-body input[type="text"],
+.settings-body input[type="number"],
+.settings-body input[type="color"],
+.settings-body select,
+.settings-body textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--glass-border);
+  background: rgba(0,0,0,0.3);
+  color: var(--text);
+  font: inherit;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.settings-body input:focus,
+.settings-body select:focus,
+.settings-body textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+.settings-body textarea { min-height: 100px; resize: vertical; line-height: 1.45; }
+.toggle-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--glass-border);
+}
+.toggle-row span { font-size: 0.9rem; }
+.toggle-row input[type="checkbox"] {
+  width: 40px; height: 22px;
+  appearance: none;
+  background: var(--glass-strong);
+  border-radius: 999px;
+  border: 1px solid var(--glass-border);
+  position: relative;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.toggle-row input[type="checkbox"]::after {
+  content: "";
+  position: absolute;
+  top: 2px; left: 2px;
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: var(--text-dim);
+  transition: transform 0.2s, background 0.2s;
+}
+.toggle-row input[type="checkbox"]:checked {
+  background: color-mix(in srgb, var(--accent) 40%, transparent);
+  border-color: var(--accent);
+}
+.toggle-row input[type="checkbox"]:checked::after {
+  transform: translateX(18px);
+  background: var(--accent-2);
+}
+.theme-swatches {
+  display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 4px;
+}
+.theme-swatch {
+  width: 30px; height: 30px;
+  border-radius: 8px;
+  border: 2px solid var(--glass-border);
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.theme-swatch:hover { transform: scale(1.1); }
+.theme-swatch.selected {
+  border-color: #fff;
+  box-shadow: 0 0 0 2px var(--accent), 0 0 16px var(--accent-glow);
+}
+.settings-actions {
+  display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px;
+}
+.settings-actions button {
+  padding: 9px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--glass-border);
+  background: var(--glass);
+  color: var(--text);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.settings-actions button:hover {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+}
+.settings-actions button.danger {
+  border-color: color-mix(in srgb, var(--danger) 50%, transparent);
+  color: #fecaca;
+}
+.settings-actions button.danger:hover {
+  background: color-mix(in srgb, var(--danger) 18%, transparent);
+}
+
+#toast {
+  position: fixed;
+  bottom: 28px; left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  padding: 10px 18px;
+  border-radius: 999px;
+  background: rgba(20, 20, 35, 0.92);
+  border: 1px solid var(--glass-border);
+  color: var(--text);
+  font-size: 0.85rem;
+  font-weight: 600;
+  z-index: 200;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s, transform 0.25s var(--ease);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 8px 28px rgba(0,0,0,0.4);
+}
+#toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+body.density-compact .msg { gap: 8px; }
+body.density-compact .msg-body { padding: 8px 11px; }
+body.density-compact .messages { gap: 8px; padding: 12px; }
+
+@media (max-width: 820px) {
+  .app { grid-template-columns: 1fr; }
+  .sidebar {
+    position: fixed;
+    inset: 0 auto 0 0;
+    width: min(300px, 88vw);
+    z-index: 60;
+    transform: translateX(-105%);
+    box-shadow: 20px 0 60px rgba(0,0,0,0.5);
   }
-
-  function resize() {
-    dpr = Math.min(window.devicePixelRatio || 1, 2);
-    w = window.innerWidth;
-    h = window.innerHeight;
-    canvas.width = Math.floor(w * dpr);
-    canvas.height = Math.floor(h * dpr);
-    canvas.style.width = w + "px";
-    canvas.style.height = h + "px";
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    density = Math.max(0.4, Math.min(1.2, (w * h) / 1.4e6));
-    seed();
+  body:not(.sidebar-collapsed) .sidebar {
+    transform: none;
+    opacity: 1;
+    pointer-events: auto;
   }
+  body.sidebar-collapsed .sidebar { transform: translateX(-105%); }
+  .status-pills { display: none; }
+}
+@media (max-width: 480px) {
+  .composer { padding: 10px; }
+  .topbar { padding: 10px 12px; }
+  .messages { padding: 12px; }
+}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar" id="sidebar">
+      <div class="side-head">
+        <div class="logo-mark">A</div>
+        <div class="logo-text">
+          <strong>NRXN AIR</strong>
+          <span>LOCAL · WASM · v0.3</span>
+        </div>
+      </div>
 
-  function seed() {
-    const target = Math.floor(55 * density);
-    particles = [];
-    for (let i = 0; i < target; i++) {
-      particles.push({
-        x: Math.random() * w,
-        y: Math.random() * h,
-        vx: (Math.random() - 0.5) * 0.35,
-        vy: (Math.random() - 0.5) * 0.35,
-        r: 1.1 + Math.random() * 2.2,
-        a: 0.25 + Math.random() * 0.55,
-        pulse: Math.random() * Math.PI * 2,
-      });
-    }
-  }
+      <div class="account-bar">
+        <div class="avatar" id="currentAccountAvatar">L</div>
+        <div class="account-info">
+          <div class="label">Account</div>
+          <div class="name" id="currentAccountName">Local User</div>
+        </div>
+        <button type="button" class="icon-btn" id="btnNewAccount" title="New account">＋</button>
+      </div>
+      <div class="account-list" id="accountList"></div>
 
-  function tick() {
-    ctx.clearRect(0, 0, w, h);
-    const [cr, cg, cb] = accentRgb;
-    const linkDist = 120;
+      <div class="side-tabs">
+        <button type="button" class="side-tab active" data-panel="chats">Chats</button>
+        <button type="button" class="side-tab" data-panel="memories">Memories</button>
+      </div>
 
-    for (let i = 0; i < particles.length; i++) {
-      const p = particles[i];
-      p.pulse += 0.018;
-      p.x += p.vx;
-      p.y += p.vy;
+      <div class="side-actions">
+        <button type="button" class="primary" id="btnNewChat">＋ New chat</button>
+        <button type="button" id="btnNewShared" title="Shared across accounts on this device">Share+</button>
+      </div>
 
-      if (p.x < -20) p.x = w + 20;
-      if (p.x > w + 20) p.x = -20;
-      if (p.y < -20) p.y = h + 20;
-      if (p.y > h + 20) p.y = -20;
+      <div class="side-panel active" data-panel="chats" id="chatList"></div>
+      <div class="side-panel" data-panel="memories">
+        <div class="side-actions" style="padding:0 0 8px">
+          <button type="button" class="primary" id="btnAddMemory" style="width:100%">＋ Add memory</button>
+        </div>
+        <div id="memoryList"></div>
+      </div>
 
-      if (mouse.active) {
-        const dx = p.x - mouse.x;
-        const dy = p.y - mouse.y;
-        const dist = Math.hypot(dx, dy);
-        if (dist < 140 && dist > 0.1) {
-          const force = (140 - dist) / 140;
-          p.vx += (dx / dist) * force * 0.08;
-          p.vy += (dy / dist) * force * 0.08;
-        }
-      }
+      <div class="side-foot">
+        <button type="button" id="btnSettings" title="Settings">⚙ Settings</button>
+      </div>
+    </aside>
 
-      p.vx *= 0.992;
-      p.vy *= 0.992;
-      p.vx += (Math.random() - 0.5) * 0.012;
-      p.vy += (Math.random() - 0.5) * 0.012;
+    <section class="main">
+      <header class="topbar">
+        <button type="button" class="icon-btn" id="btnToggleSidebar" title="Toggle sidebar">☰</button>
+        <div class="topbar-title">
+          <h1 id="chatTitle">Welcome chat</h1>
+          <p id="chatSubtitle">Private to current account</p>
+        </div>
+        <div class="status-pills">
+          <div class="status-pill" id="runtimeStatus"><span class="pulse-dot"></span> Booting…</div>
+          <div class="status-pill" id="modelStatus">Model…</div>
+        </div>
+        <button type="button" class="icon-btn" id="btnShareChat" title="Toggle shared">⇄</button>
+        <button type="button" class="icon-btn" id="btnDeleteChat" title="Delete chat">🗑</button>
+      </header>
 
-      const glow = 0.55 + Math.sin(p.pulse) * 0.25;
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(${cr},${cg},${cb},${p.a * glow})`;
-      ctx.fill();
-    }
+      <div class="messages" id="messages"></div>
 
-    for (let i = 0; i < particles.length; i++) {
-      for (let j = i + 1; j < particles.length; j++) {
-        const a = particles[i];
-        const b = particles[j];
-        const dx = a.x - b.x;
-        const dy = a.y - b.y;
-        const dist = Math.hypot(dx, dy);
-        if (dist < linkDist) {
-          const alpha = (1 - dist / linkDist) * 0.22;
-          ctx.beginPath();
-          ctx.moveTo(a.x, a.y);
-          ctx.lineTo(b.x, b.y);
-          ctx.strokeStyle = `rgba(${cr},${cg},${cb},${alpha})`;
-          ctx.lineWidth = 1;
-          ctx.stroke();
-        }
-      }
-    }
+      <div class="typing" id="typing" hidden>
+        <span class="typing-dots"><span></span><span></span><span></span></span>
+        AIR is thinking…
+      </div>
 
-    raf = requestAnimationFrame(tick);
-  }
+      <div class="composer-wrap">
+        <div class="composer">
+          <textarea id="composerInput" rows="1" placeholder="Message AIR… (Enter to send, Shift+Enter newline)"></textarea>
+          <div class="composer-btns">
+            <button type="button" class="stop-btn" id="stopBtn" hidden>Stop</button>
+            <button type="button" class="send-btn" id="sendBtn">Send</button>
+          </div>
+        </div>
+        <div class="hint-row">
+          <span>Fully local · no backend · WASM CPU</span>
+          <span>Memories inject into prompts when enabled</span>
+        </div>
+      </div>
+    </section>
+  </div>
 
-  function setAccent(cssColor) {
-    accent = cssColor || "#a78bfa";
-    accentRgb = parseAccent(accent);
-  }
+  <div class="settings-backdrop" id="settingsBackdrop"></div>
+  <aside class="settings-panel" id="settingsPanel">
+    <div class="settings-head">
+      <h2>SETTINGS</h2>
+      <button type="button" class="icon-btn" id="btnCloseSettings">✕</button>
+    </div>
+    <div class="settings-body">
+      <label>Theme</label>
+      <select id="themeSelect">
+        <option value="seraph">Seraph Glass</option>
+        <option value="blood">GX Blood</option>
+        <option value="midnight">Midnight</option>
+        <option value="emerald">Emerald</option>
+        <option value="amber">Amber</option>
+        <option value="matrix">Matrix</option>
+        <option value="rose">Rose</option>
+        <option value="cyan">Cyan</option>
+      </select>
+      <div class="theme-swatches" id="themeSwatches"></div>
 
-  window.addEventListener("mousemove", (e) => {
-    mouse.x = e.clientX;
-    mouse.y = e.clientY;
-    mouse.active = true;
-  });
-  window.addEventListener("mouseleave", () => {
-    mouse.active = false;
-  });
-  window.addEventListener("touchmove", (e) => {
-    const t = e.touches[0];
-    if (t) {
-      mouse.x = t.clientX;
-      mouse.y = t.clientY;
-      mouse.active = true;
-    }
-  }, { passive: true });
-  window.addEventListener("touchend", () => {
-    mouse.active = false;
-  });
-  window.addEventListener("resize", () => {
-    cancelAnimationFrame(raf);
-    resize();
-    raf = requestAnimationFrame(tick);
-  });
+      <label>Custom accent (overrides theme accent)</label>
+      <input type="color" id="customAccent" value="#a78bfa" />
 
-  // Observe CSS variable changes for live theme sync
-  const root = document.documentElement;
-  const observer = new MutationObserver(() => {
-    const v = getComputedStyle(root).getPropertyValue("--accent").trim();
-    if (v) setAccent(v);
-  });
-  observer.observe(root, { attributes: true, attributeFilter: ["style", "data-theme", "class"] });
+      <label>Density</label>
+      <select id="densitySelect">
+        <option value="comfortable">Comfortable</option>
+        <option value="compact">Compact</option>
+      </select>
 
-  resize();
-  setAccent(getComputedStyle(root).getPropertyValue("--accent").trim() || "#a78bfa");
-  raf = requestAnimationFrame(tick);
+      <label>Font scale</label>
+      <input type="range" id="fontScale" min="0.85" max="1.25" step="0.05" value="1" />
 
-  window.NRXNParticles = { setAccent, resize };
-})();
+      <div class="toggle-row">
+        <span>Particle background</span>
+        <input type="checkbox" id="particlesToggle" checked />
+      </div>
+      <div class="toggle-row">
+        <span>Inject AI memories into prompts</span>
+        <input type="checkbox" id="memoriesToggle" checked />
+      </div>
+
+      <label>Max generation characters</label>
+      <input type="number" id="maxChars" min="64" max="2000" value="420" />
+
+      <label>System prompt (this chat)</label>
+      <textarea id="systemPrompt"></textarea>
+
+      <div class="settings-actions">
+        <button type="button" id="btnExport">Export data</button>
+        <button type="button" id="btnImport">Import data</button>
+        <input type="file" id="importFile" accept="application/json" hidden />
+        <button type="button" class="danger" id="btnReset">Reset all</button>
+      </div>
+
+      <p style="margin-top:20px;font-size:0.75rem;color:var(--text-dim);line-height:1.5">
+        NRXN AIR runs entirely in your browser via WebAssembly. Accounts, chats, and memories are stored in localStorage on this device.
+        Shared chats are visible to every account on the same browser profile.
+      </p>
+    </div>
+  </aside>
+
+  <script src="./particles.js"></script>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
